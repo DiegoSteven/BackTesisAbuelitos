@@ -1,0 +1,18 @@
+# Python cache
+__pycache__/
+*.pyc
+
+# Entornos virtuales
+venv/
+env/
+.venv/
+
+# Variables de entorno reales
+.env
+
+# Mantener la plantilla
+!.env.example
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db

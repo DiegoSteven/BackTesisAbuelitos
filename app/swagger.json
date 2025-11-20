@@ -1,0 +1,723 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "API Abuelitos - Juegos Cognitivos",
+    "description": "API REST para juegos cognitivos adaptados para adultos mayores. Incluye sistema de usuarios y juego de formación de palabras (Abecedario) con niveles adaptativos basados en IA.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Tesis Abuelitos",
+      "email": "support@example.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000",
+      "description": "Servidor de desarrollo local"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Usuarios",
+      "description": "Endpoints de gestión de usuarios"
+    },
+    {
+      "name": "Abecedario",
+      "description": "Juego de formación de palabras con niveles adaptativos"
+    }
+  ],
+  "paths": {
+    "/register": {
+      "post": {
+        "tags": ["Usuarios"],
+        "summary": "Registrar nuevo usuario",
+        "description": "Crea un nuevo usuario en el sistema",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserRegister"
+              },
+              "example": {
+                "nombre": "usuario1",
+                "password": "password123",
+                "edad": 65,
+                "genero": "M"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Usuario registrado exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error en los datos enviados"
+          }
+        }
+      }
+    },
+    "/login": {
+      "post": {
+        "tags": ["Usuarios"],
+        "summary": "Iniciar sesión",
+        "description": "Autentica un usuario y devuelve sus datos",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserLogin"
+              },
+              "example": {
+                "nombre": "usuario1",
+                "password": "password123"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login exitoso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Credenciales inválidas"
+          }
+        }
+      }
+    },
+    "/users": {
+      "get": {
+        "tags": ["Usuarios"],
+        "summary": "Listar todos los usuarios",
+        "description": "Obtiene la lista completa de usuarios registrados",
+        "responses": {
+          "200": {
+            "description": "Lista de usuarios",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserList"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/abecedario/next-challenge/{user_id}": {
+      "get": {
+        "tags": ["Abecedario"],
+        "summary": "Obtener siguiente desafío",
+        "description": "Genera un nuevo desafío de palabra adaptativo basado en el rendimiento del usuario. El sistema analiza el historial, determina el nivel apropiado (facil/intermedio/dificil), detecta si tuvo muchos errores (≥8) para bajar de nivel, y sube de nivel después de completar 5 palabras exitosamente.",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID del usuario",
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Desafío generado exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChallengeResponse"
+                },
+                "example": {
+                  "challenge": {
+                    "palabra_objetivo": "CAFÉ",
+                    "letras_distractoras": ["L", "M"],
+                    "pista_contextual": "Bebida caliente muy popular en las mañanas",
+                    "nivel_dificultad": "facil",
+                    "progreso_nivel": {
+                      "palabras_completadas": 2,
+                      "palabras_requeridas": 5,
+                      "porcentaje": 40.0
+                    }
+                  },
+                  "timestamp": "2025-11-16T20:30:00.000000"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error al generar desafío"
+          }
+        }
+      }
+    },
+    "/abecedario/session": {
+      "post": {
+        "tags": ["Abecedario"],
+        "summary": "Guardar sesión de juego",
+        "description": "Guarda los resultados de una sesión de juego completada. Detecta automáticamente cambios de nivel y resetea el contador de progreso cuando corresponde.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionData"
+              },
+              "example": {
+                "user_id": 1,
+                "palabra_objetivo": "CAFÉ",
+                "tiempo_resolucion": 45.5,
+                "cantidad_errores": 2,
+                "pistas_usadas": 0,
+                "completado": true,
+                "nivel_dificultad": "facil"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sesión guardada exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Faltan campos requeridos"
+          }
+        }
+      }
+    },
+    "/abecedario/stats/{user_id}": {
+      "get": {
+        "tags": ["Abecedario"],
+        "summary": "Estadísticas de rendimiento",
+        "description": "Obtiene estadísticas generales del usuario: promedios de tiempo y errores, tasa de éxito, tendencia y análisis de dificultad reciente.",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID del usuario"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Estadísticas del usuario",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/abecedario/daily-summary/{user_id}": {
+      "get": {
+        "tags": ["Abecedario"],
+        "summary": "Resumen diario",
+        "description": "Obtiene resumen de sesiones de un día específico. Si no se especifica fecha, usa el día actual.",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID del usuario"
+          },
+          {
+            "name": "fecha",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Fecha en formato YYYY-MM-DD",
+            "example": "2025-11-16"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resumen del día",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DailySummaryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Formato de fecha inválido"
+          }
+        }
+      }
+    },
+    "/abecedario/history/{user_id}": {
+      "get": {
+        "tags": ["Abecedario"],
+        "summary": "Historial de sesiones",
+        "description": "Obtiene el historial de sesiones. Sin parámetros devuelve las últimas 20 sesiones. Con fecha_inicio y fecha_fin filtra por rango.",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID del usuario"
+          },
+          {
+            "name": "fecha_inicio",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Fecha de inicio (YYYY-MM-DD)",
+            "example": "2025-11-01"
+          },
+          {
+            "name": "fecha_fin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Fecha de fin (YYYY-MM-DD)",
+            "example": "2025-11-16"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Historial de sesiones",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/abecedario/evolution/{user_id}": {
+      "get": {
+        "tags": ["Abecedario"],
+        "summary": "Reporte de evolución",
+        "description": "Obtiene reporte agrupado por fecha y nivel de dificultad. Muestra la progresión del usuario a través de los niveles con métricas promedio.",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID del usuario"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reporte de evolución",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvolutionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "UserRegister": {
+        "type": "object",
+        "required": ["nombre", "password", "edad", "genero"],
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "description": "Nombre de usuario único"
+          },
+          "password": {
+            "type": "string",
+            "description": "Contraseña del usuario"
+          },
+          "edad": {
+            "type": "integer",
+            "description": "Edad del usuario"
+          },
+          "genero": {
+            "type": "string",
+            "enum": ["M", "F"],
+            "description": "Género del usuario (M o F)"
+          }
+        }
+      },
+      "UserLogin": {
+        "type": "object",
+        "required": ["nombre", "password"],
+        "properties": {
+          "nombre": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        }
+      },
+      "UserResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "user": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "nombre": {
+                "type": "string"
+              },
+              "edad": {
+                "type": "integer"
+              },
+              "genero": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "UserList": {
+        "type": "object",
+        "properties": {
+          "users": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "integer"
+                },
+                "nombre": {
+                  "type": "string"
+                },
+                "edad": {
+                  "type": "integer"
+                },
+                "genero": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "ChallengeResponse": {
+        "type": "object",
+        "properties": {
+          "challenge": {
+            "type": "object",
+            "properties": {
+              "palabra_objetivo": {
+                "type": "string",
+                "description": "Palabra que el usuario debe formar (siempre en MAYÚSCULAS)"
+              },
+              "letras_distractoras": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Letras adicionales para aumentar dificultad"
+              },
+              "pista_contextual": {
+                "type": "string",
+                "description": "Pista que ayuda a adivinar la palabra (solo visible en nivel difícil)"
+              },
+              "nivel_dificultad": {
+                "type": "string",
+                "enum": ["facil", "intermedio", "dificil"],
+                "description": "Nivel de dificultad del desafío"
+              },
+              "progreso_nivel": {
+                "type": "object",
+                "properties": {
+                  "palabras_completadas": {
+                    "type": "integer",
+                    "description": "Palabras completadas en el nivel actual"
+                  },
+                  "palabras_requeridas": {
+                    "type": "integer",
+                    "description": "Palabras necesarias para avanzar de nivel (siempre 5)"
+                  },
+                  "porcentaje": {
+                    "type": "number",
+                    "description": "Porcentaje de progreso en el nivel"
+                  }
+                }
+              }
+            }
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "SessionData": {
+        "type": "object",
+        "required": ["user_id", "palabra_objetivo", "tiempo_resolucion", "cantidad_errores", "pistas_usadas", "completado", "nivel_dificultad"],
+        "properties": {
+          "user_id": {
+            "type": "integer",
+            "description": "ID del usuario"
+          },
+          "palabra_objetivo": {
+            "type": "string",
+            "description": "Palabra que se intentó formar"
+          },
+          "tiempo_resolucion": {
+            "type": "number",
+            "description": "Tiempo en segundos que tomó completar"
+          },
+          "cantidad_errores": {
+            "type": "integer",
+            "description": "Número de intentos incorrectos"
+          },
+          "pistas_usadas": {
+            "type": "integer",
+            "description": "Cantidad de pistas utilizadas (0 o 1)"
+          },
+          "completado": {
+            "type": "boolean",
+            "description": "Si se completó exitosamente la palabra"
+          },
+          "nivel_dificultad": {
+            "type": "string",
+            "enum": ["facil", "intermedio", "dificil"],
+            "description": "Nivel en el que se jugó (debe coincidir con el recibido en /next-challenge)"
+          }
+        }
+      },
+      "SessionResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "session": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "user_id": {
+                "type": "integer"
+              },
+              "palabra_objetivo": {
+                "type": "string"
+              },
+              "longitud_palabra": {
+                "type": "integer"
+              },
+              "tiempo_resolucion": {
+                "type": "number"
+              },
+              "cantidad_errores": {
+                "type": "integer"
+              },
+              "pistas_usadas": {
+                "type": "integer"
+              },
+              "completado": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "fecha_juego": {
+                "type": "string",
+                "format": "date"
+              }
+            }
+          }
+        }
+      },
+      "StatsResponse": {
+        "type": "object",
+        "properties": {
+          "stats": {
+            "type": "object",
+            "properties": {
+              "promedio_tiempo": {
+                "type": "number",
+                "description": "Tiempo promedio de resolución en segundos"
+              },
+              "promedio_errores": {
+                "type": "number",
+                "description": "Promedio de errores por sesión"
+              },
+              "tasa_exito": {
+                "type": "number",
+                "description": "Porcentaje de palabras completadas exitosamente"
+              },
+              "total_sesiones": {
+                "type": "integer",
+                "description": "Total de sesiones jugadas"
+              },
+              "completadas": {
+                "type": "integer",
+                "description": "Sesiones completadas exitosamente"
+              },
+              "ultima_palabra": {
+                "type": "string",
+                "description": "Última palabra jugada"
+              },
+              "tendencia": {
+                "type": "string",
+                "enum": ["mejorando", "empeorando", "estable", "insuficientes_datos"],
+                "description": "Tendencia de rendimiento"
+              },
+              "sesion_reciente_dificil": {
+                "type": "boolean",
+                "description": "Si hubo sesión con 8+ errores en las últimas 3"
+              }
+            }
+          }
+        }
+      },
+      "DailySummaryResponse": {
+        "type": "object",
+        "properties": {
+          "fecha": {
+            "type": "string",
+            "format": "date"
+          },
+          "total_palabras": {
+            "type": "integer"
+          },
+          "palabras_completadas": {
+            "type": "integer"
+          },
+          "tiempo_total": {
+            "type": "number"
+          },
+          "errores_totales": {
+            "type": "integer"
+          },
+          "promedio_tiempo": {
+            "type": "number"
+          },
+          "sesiones": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        }
+      },
+      "HistoryResponse": {
+        "type": "object",
+        "properties": {
+          "sesiones": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "total": {
+            "type": "integer"
+          }
+        }
+      },
+      "EvolutionResponse": {
+        "type": "object",
+        "properties": {
+          "total_sesiones": {
+            "type": "integer"
+          },
+          "evolucion": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "fecha": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "nivel": {
+                  "type": "string",
+                  "enum": ["FACIL", "INTERMEDIO", "DIFICIL"]
+                },
+                "total_palabras": {
+                  "type": "integer"
+                },
+                "completadas": {
+                  "type": "integer"
+                },
+                "tiempo_total": {
+                  "type": "number"
+                },
+                "errores_totales": {
+                  "type": "integer"
+                },
+                "pistas_usadas": {
+                  "type": "integer"
+                },
+                "promedio_tiempo": {
+                  "type": "number"
+                },
+                "promedio_errores": {
+                  "type": "number"
+                },
+                "tasa_exito": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
