@@ -1,0 +1,206 @@
+{
+  "facil": [
+    {
+      "palabra_objetivo": "SOL",
+      "letras_distractoras": ["M", "R"],
+      "pista_contextual": "Brilla en el cielo durante el día"
+    },
+    {
+      "palabra_objetivo": "LUNA",
+      "letras_distractoras": ["P", "T"],
+      "pista_contextual": "Ilumina la noche con su luz plateada"
+    },
+    {
+      "palabra_objetivo": "CASA",
+      "letras_distractoras": ["L", "M"],
+      "pista_contextual": "Lugar donde vives con tu familia"
+    },
+    {
+      "palabra_objetivo": "AGUA",
+      "letras_distractoras": ["E", "O"],
+      "pista_contextual": "Líquido transparente que bebemos"
+    },
+    {
+      "palabra_objetivo": "PAN",
+      "letras_distractoras": ["C", "T", "O"],
+      "pista_contextual": "Alimento básico que se come en el desayuno"
+    },
+    {
+      "palabra_objetivo": "GATO",
+      "letras_distractoras": ["P", "R"],
+      "pista_contextual": "Animal doméstico que dice miau"
+    },
+    {
+      "palabra_objetivo": "PERRO",
+      "letras_distractoras": ["A", "T"],
+      "pista_contextual": "El mejor amigo del hombre"
+    },
+    {
+      "palabra_objetivo": "FLOR",
+      "letras_distractoras": ["M", "S"],
+      "pista_contextual": "Planta bonita y perfumada de colores"
+    },
+    {
+      "palabra_objetivo": "ÁRBOL",
+      "letras_distractoras": ["C", "N"],
+      "pista_contextual": "Planta grande con tronco y hojas verdes"
+    },
+    {
+      "palabra_objetivo": "CAFÉ",
+      "letras_distractoras": ["L", "T"],
+      "pista_contextual": "Bebida caliente y oscura de la mañana"
+    },
+    {
+      "palabra_objetivo": "LIBRO",
+      "letras_distractoras": ["A", "P"],
+      "pista_contextual": "Tiene páginas y sirve para leer historias"
+    },
+    {
+      "palabra_objetivo": "MESA",
+      "letras_distractoras": ["D", "R"],
+      "pista_contextual": "Mueble donde comemos y trabajamos"
+    },
+    {
+      "palabra_objetivo": "SILLA",
+      "letras_distractoras": ["M", "O"],
+      "pista_contextual": "Mueble donde nos sentamos"
+    },
+    {
+      "palabra_objetivo": "CAMA",
+      "letras_distractoras": ["P", "S"],
+      "pista_contextual": "Donde dormimos y descansamos"
+    },
+    {
+      "palabra_objetivo": "MAR",
+      "letras_distractoras": ["T", "P", "L"],
+      "pista_contextual": "Agua salada con olas y playas"
+    },
+    {
+      "palabra_objetivo": "CIELO",
+      "letras_distractoras": ["A", "R"],
+      "pista_contextual": "Arriba, es azul de día y oscuro de noche"
+    },
+    {
+      "palabra_objetivo": "PAN",
+      "letras_distractoras": ["R", "M", "E"],
+      "pista_contextual": "Lo comemos tostado o con mantequilla"
+    },
+    {
+      "palabra_objetivo": "LECHE",
+      "letras_distractoras": ["T", "O"],
+      "pista_contextual": "Bebida blanca que viene de la vaca"
+    },
+    {
+      "palabra_objetivo": "MANO",
+      "letras_distractoras": ["S", "T"],
+      "pista_contextual": "Con ella saludamos y agarramos cosas"
+    },
+    {
+      "palabra_objetivo": "PIE",
+      "letras_distractoras": ["L", "M", "T"],
+      "pista_contextual": "Con ellos caminamos y usamos zapatos"
+    }
+  ],
+  "intermedio": [
+    {
+      "palabra_objetivo": "JARDÍN",
+      "letras_distractoras": ["O", "P"],
+      "pista_contextual": "Espacio verde con flores y plantas en casa"
+    },
+    {
+      "palabra_objetivo": "COCINA",
+      "letras_distractoras": ["L", "T"],
+      "pista_contextual": "Lugar donde preparamos la comida"
+    },
+    {
+      "palabra_objetivo": "VENTANA",
+      "letras_distractoras": ["M", "R"],
+      "pista_contextual": "Abrimos esto para que entre aire fresco"
+    },
+    {
+      "palabra_objetivo": "PUERTA",
+      "letras_distractoras": ["L", "M"],
+      "pista_contextual": "La usamos para entrar y salir de casa"
+    },
+    {
+      "palabra_objetivo": "CAMINO",
+      "letras_distractoras": ["P", "R"],
+      "pista_contextual": "Sendero por donde caminamos o manejamos"
+    },
+    {
+      "palabra_objetivo": "FAMILIA",
+      "letras_distractoras": ["O", "E"],
+      "pista_contextual": "Personas queridas que viven juntas"
+    },
+    {
+      "palabra_objetivo": "ALEGRÍA",
+      "letras_distractoras": ["N", "P"],
+      "pista_contextual": "Sentimiento de felicidad y sonrisas"
+    },
+    {
+      "palabra_objetivo": "MÚSICA",
+      "letras_distractoras": ["L", "R"],
+      "pista_contextual": "Sonidos hermosos de canciones e instrumentos"
+    },
+    {
+      "palabra_objetivo": "ZAPATO",
+      "letras_distractoras": ["L", "M"],
+      "pista_contextual": "Calzado que protege nuestros pies"
+    },
+    {
+      "palabra_objetivo": "ROPA",
+      "letras_distractoras": ["S", "N", "T"],
+      "pista_contextual": "Vestimenta que usamos todos los días"
+    },
+    {
+      "palabra_objetivo": "RADIO",
+      "letras_distractoras": ["L", "P", "M"],
+      "pista_contextual": "Aparato para escuchar noticias y música"
+    },
+    {
+      "palabra_objetivo": "PLATO",
+      "letras_distractoras": ["C", "N", "R"],
+      "pista_contextual": "Vajilla donde servimos la comida"
+    },
+    {
+      "palabra_objetivo": "CUCHARA",
+      "letras_distractoras": ["P", "S"],
+      "pista_contextual": "Cubierto para tomar sopa o postre"
+    },
+    {
+      "palabra_objetivo": "TENEDOR",
+      "letras_distractoras": ["L", "S"],
+      "pista_contextual": "Cubierto con púas para picar alimentos"
+    },
+    {
+      "palabra_objetivo": "RELOJ",
+      "letras_distractoras": ["M", "P", "S"],
+      "pista_contextual": "Nos dice la hora del día"
+    },
+    {
+      "palabra_objetivo": "BOLSA",
+      "letras_distractoras": ["N", "P", "R"],
+      "pista_contextual": "Sirve para cargar las compras"
+    },
+    {
+      "palabra_objetivo": "DINERO",
+      "letras_distractoras": ["L", "P"],
+      "pista_contextual": "Billetes y monedas para comprar cosas"
+    },
+    {
+      "palabra_objetivo": "MERCADO",
+      "letras_distractoras": ["L", "T"],
+      "pista_contextual": "Lugar donde compramos frutas y verduras"
+    },
+    {
+      "palabra_objetivo": "PARQUE",
+      "letras_distractoras": ["L", "M", "S"],
+      "pista_contextual": "Espacio público con árboles y bancas"
+    },
+    {
+      "palabra_objetivo": "IGLESIA",
+      "letras_distractoras": ["O", "T"],
+      "pista_contextual": "Lugar sagrado donde se reza y se ora"
+    }
+  ]
+}
