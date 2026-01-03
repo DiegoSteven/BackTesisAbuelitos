@@ -173,3 +173,32 @@ class AbecedarioController:
             import traceback
             traceback.print_exc()
             return jsonify({'error': str(e)}), 500
+    
+    @staticmethod
+    def get_final_stats(user_id):
+        """
+        Obtiene estadísticas finales del juego con puntos calculados
+        GET /abecedario/final-stats/<user_id>
+        Query params: fecha (opcional, formato YYYY-MM-DD)
+        """
+        try:
+            fecha_str = request.args.get('fecha')
+            fecha = None
+            
+            if fecha_str:
+                try:
+                    fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+                except ValueError:
+                    return jsonify({'error': 'Formato de fecha inválido. Use YYYY-MM-DD'}), 400
+            
+            stats, error = AbecedarioService.get_final_game_stats(user_id, fecha)
+            
+            if error:
+                return jsonify({'error': error}), 400
+            
+            return jsonify(stats), 200
+            
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return jsonify({'error': str(e)}), 500

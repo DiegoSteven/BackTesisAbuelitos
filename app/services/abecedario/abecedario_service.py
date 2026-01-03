@@ -523,3 +523,148 @@ class AbecedarioService:
             import traceback
             traceback.print_exc()
             return None, str(e)
+    
+    @staticmethod
+    def get_final_game_stats(user_id, fecha=None):
+        """
+        Calcula estadísticas finales del juego usando SOLO campos existentes.
+        Incluye cálculo de puntos basado en desempeño.
+        
+        Returns:
+            dict: Estadísticas completas con puntos calculados
+        """
+        try:
+            if fecha is None:
+                fecha = date.today()
+            
+            # Obtener todas las sesiones del día
+            sesiones = Abecedario.query.filter_by(
+                user_id=user_id,
+                fecha_juego=fecha
+            ).order_by(Abecedario.created_at.asc()).all()
+            
+            if not sesiones:
+                return {
+                    'fecha': fecha.isoformat(),
+                    'puntos_totales': 0,
+                    'palabras_completadas': 0,
+                    'palabras_totales': 0,
+                    'por_nivel': {},
+                    'metricas_globales': {
+                        'tiempo_promedio': 0,
+                        'mejor_tiempo': 0,
+                        'precision': 0,
+                        'total_errores': 0,
+                        'total_pistas': 0
+                    }
+                }, None
+            
+            # Inicializar contadores
+            puntos_totales = 0
+            palabras_completadas = 0
+            palabras_totales = len(sesiones)
+            
+            # Métricas por nivel
+            por_nivel = {
+                'facil': {'palabras': 0, 'completadas': 0, 'puntos': 0},
+                'intermedio': {'palabras': 0, 'completadas': 0, 'puntos': 0},
+                'dificil': {'palabras': 0, 'completadas': 0, 'puntos': 0}
+            }
+            
+            # Métricas globales
+            tiempos = []
+            total_errores = 0
+            total_pistas = 0
+            
+            # Puntos base por nivel
+            puntos_base = {
+                'facil': 10,
+                'intermedio': 25,
+                'dificil': 50
+            }
+            
+            # Procesar cada sesión
+            for sesion in sesiones:
+                nivel = sesion.nivel_jugado or 'facil'
+                
+                # Contar palabras por nivel
+                por_nivel[nivel]['palabras'] += 1
+                
+                if sesion.completado:
+                    palabras_completadas += 1
+                    por_nivel[nivel]['completadas'] += 1
+                    
+                    # CALCULAR PUNTOS SOLO SI COMPLETÓ LA PALABRA
+                    base = puntos_base[nivel]
+                    multiplicador = 1.0
+                    
+                    # Bonificación: Sin errores (+50%)
+                    if sesion.cantidad_errores == 0:
+                        multiplicador += 0.5
+                    
+                    # Bonificación: Sin pistas en nivel difícil (+25%)
+                    if sesion.pistas_usadas == 0 and nivel == 'dificil':
+                        multiplicador += 0.25
+                    
+                    # Bonificación: Tiempo rápido < 15s (+20%)
+                    if sesion.tiempo_resolucion < 15:
+                        multiplicador += 0.2
+                    
+                    # Penalización: Errores (-5 puntos cada uno)
+                    penalizacion = sesion.cantidad_errores * 5
+                    
+                    # Calcular puntos finales (mínimo 0)
+                    puntos_palabra = max(0, int((base * multiplicador) - penalizacion))
+                    
+                    puntos_totales += puntos_palabra
+                    por_nivel[nivel]['puntos'] += puntos_palabra
+                
+                # Acumular métricas
+                if sesion.completado:
+                    tiempos.append(sesion.tiempo_resolucion)
+                total_errores += sesion.cantidad_errores
+                total_pistas += sesion.pistas_usadas
+            
+            # Calcular métricas globales
+            tiempo_promedio = sum(tiempos) / len(tiempos) if tiempos else 0
+            mejor_tiempo = min(tiempos) if tiempos else 0
+            precision = (palabras_completadas / palabras_totales * 100) if palabras_totales > 0 else 0
+            
+            # Construir respuesta
+            resultado = {
+                'fecha': fecha.isoformat(),
+                'puntos_totales': puntos_totales,
+                'palabras_completadas': palabras_completadas,
+                'palabras_totales': palabras_totales,
+                'por_nivel': {
+                    'facil': {
+                        'total': por_nivel['facil']['palabras'],
+                        'completadas': por_nivel['facil']['completadas'],
+                        'puntos': por_nivel['facil']['puntos']
+                    },
+                    'intermedio': {
+                        'total': por_nivel['intermedio']['palabras'],
+                        'completadas': por_nivel['intermedio']['completadas'],
+                        'puntos': por_nivel['intermedio']['puntos']
+                    },
+                    'dificil': {
+                        'total': por_nivel['dificil']['palabras'],
+                        'completadas': por_nivel['dificil']['completadas'],
+                        'puntos': por_nivel['dificil']['puntos']
+                    }
+                },
+                'metricas_globales': {
+                    'tiempo_promedio': round(tiempo_promedio, 2),
+                    'mejor_tiempo': round(mejor_tiempo, 2),
+                    'precision': round(precision, 2),
+                    'total_errores': total_errores,
+                    'total_pistas': total_pistas
+                }
+            }
+            
+            return resultado, None
+            
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return None, str(e)
