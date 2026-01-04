@@ -116,3 +116,55 @@ class PaseoService:
         except Exception as e:
             print(f"[PASEO ERROR] get_ultima_sesion: {str(e)}")
             return None, str(e)
+    
+    @staticmethod
+    def get_final_stats(user_id, fecha=None):
+        """
+        Calcula estadísticas finales del juego usando SOLO campos existentes.
+        Retorna: precisión, total de errores, total de aciertos del día
+        """
+        try:
+            if fecha is None:
+                fecha = date.today()
+            
+            # Obtener todas las sesiones del día
+            sesiones = PaseoSession.query.filter_by(
+                user_id=user_id,
+                fecha_juego=fecha
+            ).order_by(PaseoSession.created_at.asc()).all()
+            
+            if not sesiones:
+                return {
+                    'fecha': fecha.isoformat(),
+                    'precision': 0.0,
+                    'total_errores': 0,
+                    'total_aciertos': 0,
+                    'total_sesiones': 0
+                }, None
+            
+            # Calcular totales
+            total_aciertos = 0
+            total_errores = 0
+            
+            for sesion in sesiones:
+                total_aciertos += sesion.esferas_rojas_atrapadas or 0
+                total_errores += (sesion.esferas_azules_atrapadas or 0) + (sesion.esferas_perdidas or 0)
+            
+            # Calcular precisión
+            total_esferas = total_aciertos + total_errores
+            precision = (total_aciertos / total_esferas * 100) if total_esferas > 0 else 0
+            
+            resultado = {
+                'fecha': fecha.isoformat(),
+                'precision': round(precision, 1),
+                'total_errores': total_errores,
+                'total_aciertos': total_aciertos,
+                'total_sesiones': len(sesiones)
+            }
+            
+            return resultado, None
+            
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return None, str(e)

@@ -45,7 +45,7 @@ class GeminiService:
             raise ValueError("GEMINI_API_KEY no configurada en el archivo .env")
         
         genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel('gemini-3-flash')
+        self.model = genai.GenerativeModel('gemini-2.5-flash-lite')
     
     def generate_next_challenge(self, user_id):
         """Genera desafío adaptativo usando sistema híbrido local + IA"""

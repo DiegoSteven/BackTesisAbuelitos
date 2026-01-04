@@ -268,3 +268,36 @@ def get_evolution(user_id):
         import traceback
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
+
+@paseo_bp.route('/final-stats/<int:user_id>', methods=['GET'])
+def get_final_stats(user_id):
+    """
+    Obtiene estadísticas finales del día para mostrar al completar el juego
+    GET /paseo/final-stats/<user_id>
+    Query params: fecha (opcional, formato YYYY-MM-DD)
+    
+    Retorna: precisión, total_errores, total_aciertos
+    """
+    try:
+        from datetime import datetime
+        
+        fecha_str = request.args.get('fecha')
+        fecha = None
+        
+        if fecha_str:
+            try:
+                fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+            except ValueError:
+                return jsonify({'error': 'Formato de fecha inválido. Use YYYY-MM-DD'}), 400
+        
+        stats, error = PaseoService.get_final_stats(user_id, fecha)
+        
+        if error:
+            return jsonify({'error': error}), 400
+        
+        return jsonify(stats), 200
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
