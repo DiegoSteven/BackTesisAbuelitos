@@ -1,0 +1,49 @@
+@startuml HU4_Dificultad_Dinamica
+title HU4: Dificultad Dinámica
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+
+actor "Adulto Mayor" as user
+participant "Minijuego" as game
+participant "Gestor de Sesión\n(ControlSesion)" as session
+participant "Gestor de Dificultad\n(AjusteDificultad)" as difficulty
+
+user -> game : 1. Completa sesión\n(rendimiento: X)
+activate game
+
+game -> session : 2. Evaluar rendimiento
+activate session
+
+alt Rendimiento ALTO
+    session -> difficulty : 3a. Solicitar aumento\nde dificultad
+    activate difficulty
+    difficulty -> game : 4a. Aumentar complejidad
+    note right: Más estímulos\nMenos tiempo
+    deactivate difficulty
+    
+else Rendimiento BAJO
+    session -> difficulty : 3b. Solicitar disminución\nde dificultad
+    activate difficulty
+    difficulty -> game : 4b. Disminuir complejidad
+    note right: Menos estímulos\nMás tiempo
+    deactivate difficulty
+    
+else Rendimiento NORMAL
+    session -> difficulty : 3c. Mantener dificultad
+    activate difficulty
+    difficulty -> game : 4c. Mantener nivel actual
+    deactivate difficulty
+end
+
+deactivate session
+
+game --> user : 5. Nueva sesión con\ndificultad ajustada
+deactivate game
+
+note over user, difficulty
+  **Resultado:** Usuario experimenta una sesión
+  equilibrada y adecuada a su capacidad
+end note
+
+@enduml

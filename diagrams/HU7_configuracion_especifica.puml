@@ -1,0 +1,52 @@
+@startuml HU7_Configuracion_Especifica
+title HU7: Configuración Específica por Juego
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+
+participant "API de IA" as ai
+participant "Gestor de Dificultad\n(AjusteDificultad)" as difficulty
+participant "Minijuego Específico" as game
+
+ai -> difficulty : 1. Recibir parámetros\nadaptados de IA
+activate difficulty
+
+difficulty -> difficulty : 2. Interpretar parámetros\nsegún tipo de juego
+
+alt Minijuego: Adivinar Palabra
+    difficulty -> game : 3a. Configurar:\n• Longitud de palabra\n• Letras distractoras\n• Pistas disponibles
+    
+else Minijuego: Tren de Colores
+    difficulty -> game : 3b. Configurar:\n• Velocidad del tren\n• Cantidad de colores\n• Tiempo de respuesta
+    
+else Minijuego: Memoria con Cartas
+    difficulty -> game : 3c. Configurar:\n• Cantidad de pares\n• Tiempo de visualización\n• Complejidad visual
+    
+else Minijuego: Búsqueda de Objetos
+    difficulty -> game : 3d. Configurar:\n• Cantidad de objetos\n• Complejidad de escena\n• Tiempo límite
+end
+
+activate game
+
+game -> game : 4. Aplicar configuración\nespecífica
+note right
+  **Parámetros Ajustados
+  Automáticamente:**
+  
+  • Nivel de complejidad
+  • Límites de tiempo
+  • Cantidad de elementos
+  • Ayudas disponibles
+  • Velocidad de elementos
+end note
+
+game --> difficulty : 5. Confirmación:\nConfiguración aplicada
+deactivate game
+deactivate difficulty
+
+note over ai, game
+  **Resultado:** Cada sesión inicia con
+  configuraciones adaptadas al usuario
+end note
+
+@enduml

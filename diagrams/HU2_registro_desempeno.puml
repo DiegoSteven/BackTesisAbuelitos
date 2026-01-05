@@ -1,0 +1,54 @@
+@startuml HU2_Registro_Desempeno
+title HU2: Registro de Desempeño
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+
+participant "Minijuego" as game
+participant "Registro de Métricas\n(RegistroDesempeno)" as metrics
+database "Almacenamiento\nLocal" as storage
+
+activate game
+
+game -> metrics : 1. Evento: Acierto
+activate metrics
+metrics -> metrics : Registrar acierto
+deactivate metrics
+
+game -> metrics : 2. Evento: Error
+activate metrics
+metrics -> metrics : Registrar error
+deactivate metrics
+
+game -> metrics : 3. Evento: Tiempo de respuesta
+activate metrics
+metrics -> metrics : Registrar tiempo
+deactivate metrics
+
+game -> metrics : 4. Finalizar sesión:\nConsolidar métricas
+activate metrics
+
+metrics -> storage : 5. Guardar métricas completas
+activate storage
+note right
+  **Métricas Almacenadas:**
+  • Aciertos totales
+  • Errores totales
+  • Tiempos de respuesta
+  • Pistas utilizadas
+  • Estado de completitud
+end note
+
+storage --> metrics : 6. Confirmación
+deactivate storage
+
+metrics --> game : 7. Métricas guardadas
+deactivate metrics
+deactivate game
+
+note over game, storage
+  **Resultado:** Se almacenan métricas necesarias
+  para evaluación y ajustes posteriores
+end note
+
+@enduml

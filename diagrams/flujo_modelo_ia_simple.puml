@@ -1,0 +1,43 @@
+@startuml Flujo_Modelo_IA_Simplificado
+title Diagrama de Flujo Simplificado - Modelo de IA
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam linetype ortho
+skinparam defaultTextAlignment center
+
+start
+
+:Recibir Métricas
+de Sesión;
+
+:Consultar
+Historial;
+
+:Calcular
+Estadísticas;
+
+if (¿Rendimiento
+muy bajo?) then (SÍ)
+  #FFCDD2:Bajar Nivel|
+else (NO)
+  if (¿Alcanzó meta
+  de progreso?) then (SÍ)
+    #C8E6C9:Subir Nivel|
+  else (NO)
+    #FFF9C4:Mantener Nivel|
+  endif
+endif
+
+:Determinar
+Parámetros;
+
+:Generar Configuración
+Adaptada;
+
+:Enviar al
+Sistema;
+
+stop
+
+@enduml

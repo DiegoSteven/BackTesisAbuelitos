@@ -1,0 +1,117 @@
+@startuml Arquitectura_Backend
+title Arquitectura del Backend - API Flask
+
+left to right direction
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam linetype ortho
+skinparam defaultFontName Arial
+skinparam defaultFontSize 9
+skinparam packageStyle rectangle
+
+' Estilos compactos
+skinparam package {
+    BackgroundColor<<presentation>> #E3F2FD
+    BackgroundColor<<controller>> #BBDEFB
+    BackgroundColor<<service>> #C8E6C9
+    BackgroundColor<<model>> #FFF9C4
+    BackgroundColor<<database>> #E0E0E0
+    BackgroundColor<<external>> #F8BBD0
+    BorderColor #424242
+    BorderThickness 1
+    FontSize 9
+    Padding 8
+}
+
+skinparam component {
+    BackgroundColor #FFFFFF
+    BorderColor #616161
+    FontSize 8
+    Padding 5
+}
+
+' API Layer
+package "API REST\n(Flask 3.1.1)" <<presentation>> {
+    component "app.py" as app
+    together {
+        component "Routes" as routes
+        component "CORS" as cors
+        component "Swagger" as swagger
+    }
+}
+
+' Controllers
+package "Controllers" <<controller>> {
+    together {
+        component "UserController" as userCtrl
+        component "GameController" as gameCtrl
+    }
+}
+
+' Services
+package "Services" <<service>> {
+    together {
+        component "UserService" as userSvc
+        component "GameService" as gameSvc
+        component "AIService" as aiSvc
+    }
+}
+
+' Models
+package "Models\n(SQLAlchemy)" <<model>> {
+    together {
+        component "User" as userModel
+        component "GameSession" as sessionModel
+    }
+}
+
+' Configuration & Database
+together {
+    rectangle "Config" <<config>> {
+        component "database.py" as dbConfig
+        component ".env" as envConfig
+    }
+    
+    database "PostgreSQL" <<database>> {
+        component "user" as userTable
+        component "game_session" as sessionTable
+    }
+}
+
+' External & Security
+together {
+    cloud "Google\nGemini AI" as aiAPI <<external>> #F8BBD0
+    
+    rectangle "Security" #FFCDD2 {
+        component "Bcrypt" as bcrypt
+    }
+}
+
+' Relaciones principales
+app --> routes
+routes --> userCtrl
+routes --> gameCtrl
+app -right-> cors
+app -right-> swagger
+
+userCtrl --> userSvc
+gameCtrl --> gameSvc
+gameCtrl --> aiSvc
+
+userSvc --> userModel
+userSvc -left-> bcrypt
+gameSvc --> sessionModel
+aiSvc --> gameSvc
+
+userModel --> dbConfig
+sessionModel --> dbConfig
+
+dbConfig --> envConfig
+dbConfig --> postgres
+
+aiSvc -right-> aiAPI : HTTP
+
+userModel ..> userTable
+sessionModel ..> sessionTable
+
+@enduml

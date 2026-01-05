@@ -1,0 +1,76 @@
+@startuml Casos_de_Uso_Adulto_Mayor
+title Casos de Uso - Adulto Mayor
+
+left to right direction
+skinparam backgroundColor #FFFFFF
+skinparam actorStyle awesome
+skinparam packageStyle rectangle
+skinparam linetype ortho
+
+actor "Adulto Mayor" as user
+actor "Sistema IA" as system
+
+rectangle "Sistema de Juegos Cognitivos" {
+    
+    ' Casos de uso principales
+    usecase "Seleccionar\nMinijuego" as UC1
+    usecase "Jugar Sesión\nCognitiva" as UC2
+    usecase "Visualizar\nResultados" as UC3
+    
+    ' Características
+    usecase "Interfaz Accesible" as UC4
+    usecase "Recibir Dificultad\nAdaptada" as UC5
+    
+    ' Acciones del sistema
+    usecase "Capturar Métricas" as UC6
+    usecase "Ajustar Dificultad" as UC7
+}
+
+' Relaciones principales
+user --> UC1
+user --> UC2
+user --> UC3
+
+' Características incluidas
+UC1 ..> UC4 : <<include>>
+UC2 ..> UC4 : <<include>>
+UC3 ..> UC4 : <<include>>
+
+UC2 ..> UC6 : <<include>>
+UC6 ..> UC7 : <<trigger>>
+UC7 ..> UC5 : <<result>>
+
+user ..> UC5 : <<benefit>>
+
+system --> UC7
+
+' Notas
+note right of UC1
+  **HU1**: Selección de Minijuego
+  Usuario elige actividad
+  cognitiva fácilmente
+end note
+
+note right of UC4
+  **HU5**: Interfaz Accesible
+  • Botones grandes
+  • Texto legible (≥32pt)
+  • Alto contraste
+  • Sin confusión
+end note
+
+note bottom of UC5
+  **HU4**: Dificultad Dinámica
+  Sistema ajusta automáticamente
+  según rendimiento del usuario
+end note
+
+note left of UC2
+  Sesión incluye:
+  • Razonamiento verbal
+  • Atención selectiva
+  • Memoria visual
+  • Percepción
+end note
+
+@enduml

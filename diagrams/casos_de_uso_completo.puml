@@ -1,0 +1,57 @@
+@startuml Casos_de_Uso_Completo
+title Diagrama de Casos de Uso - Sistema de Juegos Cognitivos
+
+skinparam backgroundColor #FFFFFF
+skinparam actorStyle awesome
+skinparam linetype ortho
+skinparam packageStyle rectangle
+
+' Estilos
+skinparam usecase {
+    BackgroundColor #FFD54F
+    BorderColor #F57C00
+    BorderThickness 2
+    FontSize 10
+}
+
+skinparam actor {
+    BorderColor #1976D2
+    BackgroundColor #E3F2FD
+}
+
+' Actores
+actor "Adulto\nMayor" as user
+actor "Terapeuta" as therapist
+actor "Sistema IA" as system
+
+' Sistema
+rectangle "Sistema de Juegos Cognitivos" {
+    
+    ' Casos de uso principales
+    usecase "Seleccionar\nMinijuego" as UC1
+    usecase "Jugar\nSesión" as UC2
+    usecase "Ver\nResultados" as UC3
+    
+    usecase "Registrar\nDesempeño" as UC4
+    usecase "Ajustar\nDificultad" as UC5
+    
+    usecase "Consultar\nHistorial" as UC6
+    usecase "Analizar\nProgreso" as UC7
+}
+
+' Relaciones con actores
+user --> UC1
+user --> UC2
+user --> UC3
+
+therapist --> UC6
+therapist --> UC7
+
+system --> UC4
+system --> UC5
+
+' Relaciones entre casos de uso
+UC2 ..> UC4 : <<include>>
+UC4 ..> UC5 : <<extend>>
+
+@enduml

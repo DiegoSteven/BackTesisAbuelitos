@@ -1,0 +1,116 @@
+@startuml Diagrama_de_Secuencia
+title Diagrama de Secuencia - Sistema de Juegos Cognitivos Adaptativos
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+
+' Actores y Participantes
+actor Usuario as user
+participant "Menú Principal\n(Unity 3D)" as menu
+participant "Minijuego\n(Unity 3D)" as game
+participant "Gestor de Sesión\n(ControlSesion)" as session
+participant "Registro de Métricas\n(RegistroDesempeno)" as metrics
+participant "Integración API\n(IntegracionAPI)" as api
+participant "API de IA Externa" as aiAPI
+participant "Gestor de Dificultad\n(AjusteDificultad)" as difficulty
+database "Almacenamiento Local" as storage
+
+' === FASE 1: INICIALIZACIÓN ===
+group Fase 1: Inicialización
+    user -> menu : 1. Selecciona minijuego
+    activate menu
+    
+    menu -> game : 2. Cargar minijuego
+    activate game
+    
+    game -> session : 3. Solicitar inicialización
+    activate session
+    
+    session -> metrics : 4. Preparar captura de datos
+    activate metrics
+    
+    metrics --> session : 5. Listo
+    deactivate metrics
+    
+    session --> game : 6. Sesión inicializada
+    deactivate session
+    
+    game --> user : 7. Mostrar interfaz del juego
+    deactivate menu
+end
+
+' === FASE 2: JUEGO ACTIVO ===
+group Fase 2: Juego Activo
+    user -> game : 8. Juega (interacciones)
+    activate game #FFCCCC
+    
+    loop Durante el juego
+        game -> metrics : 9. Registrar eventos\n(tiempo, aciertos, errores)
+        activate metrics
+        deactivate metrics
+    end
+    
+    user -> game : 10. Completa nivel/sesión
+    deactivate game
+end
+
+' === FASE 3: FINALIZACIÓN Y PERSISTENCIA ===
+group Fase 3: Finalización y Persistencia
+    game -> session : 11. Notificar finalización
+    activate session
+    
+    session -> metrics : 12. Consolidar métricas
+    activate metrics
+    
+    metrics -> storage : 13. Guardar historial
+    activate storage
+    
+    storage --> metrics : 14. Confirmación
+    deactivate storage
+    deactivate metrics
+    deactivate session
+end
+
+' === FASE 4: ANÁLISIS CON IA ===
+group Fase 4: Análisis con IA
+    metrics -> api : 15. Enviar métricas\n(JSON con datos de desempeño)
+    activate api
+    
+    api -> aiAPI : 16. POST /api/analizar-desempeno\n{métricas}
+    activate aiAPI
+    
+    aiAPI -> aiAPI : 17. Procesar con modelo IA\n(análisis adaptativo)
+    note right
+        Adaptación en tiempo real
+        basada en desempeño
+    end note
+    
+    aiAPI --> api : 18. Respuesta con parámetros\nde dificultad adaptados
+    deactivate aiAPI
+    deactivate api
+end
+
+' === FASE 5: ADAPTACIÓN ===
+group Fase 5: Adaptación
+    api -> difficulty : 19. Aplicar parámetros\n(complejidad, tiempo, estímulos)
+    activate difficulty
+    
+    difficulty -> game : 20. Configurar próxima sesión
+    activate game
+    
+    game --> user : 21. Mostrar resultados\ny nivel actualizado
+    deactivate game
+    deactivate difficulty
+end
+
+note over user, storage
+    **Flujo Completo:**
+    1. Inicialización de sesión
+    2. Captura continua de métricas durante el juego
+    3. Persistencia local de datos
+    4. Análisis con IA externa
+    5. Adaptación automática de dificultad
+end note
+
+@enduml

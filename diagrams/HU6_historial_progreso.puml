@@ -1,0 +1,41 @@
+@startuml HU6_Historial_Progreso
+title HU6: Historial de Progreso
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+
+actor "Terapeuta" as therapist
+participant "Sistema de Consulta" as system
+database "Historial de\nDesempeño" as history
+participant "Visualizador\nde Datos" as viewer
+
+therapist -> system : 1. Solicitar historial\ndel usuario
+activate system
+
+system -> history : 2. Consultar registros\nde sesiones
+activate history
+
+history --> system : 3. Retornar datos:\n• Sesiones jugadas\n• Métricas por fecha\n• Evolución temporal
+note right
+  **Datos Disponibles:**
+  • Fechas de sesiones
+  • Aciertos/Errores
+  • Tiempos de respuesta
+  • Niveles alcanzados
+  • Tendencias
+end note
+deactivate history
+
+system -> viewer : 4. Procesar y formatear\ndatos para visualización
+activate viewer
+
+viewer --> therapist : 5. Mostrar historial:\n• Gráficos de evolución\n• Estadísticas resumidas\n• Análisis de progreso
+deactivate viewer
+deactivate system
+
+note over therapist, viewer
+  **Resultado:** Se obtiene un historial que
+  facilita el análisis del progreso cognitivo
+end note
+
+@enduml

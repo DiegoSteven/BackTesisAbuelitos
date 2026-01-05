@@ -1,0 +1,35 @@
+@startuml HU1_Seleccion_Minijuego
+title HU1: Selección de Minijuego
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+
+actor "Adulto Mayor" as user
+participant "Menú Principal\n(Unity 3D)" as menu
+participant "Minijuego\nSeleccionado" as game
+
+user -> menu : 1. Visualiza opciones\nde minijuegos
+activate menu
+
+menu --> user : 2. Muestra interfaz clara\ncon botones grandes
+note right
+  **Interfaz Accesible:**
+  - Botones grandes
+  - Texto legible
+  - Sin elementos confusos
+end note
+
+user -> menu : 3. Selecciona minijuego
+menu -> game : 4. Carga minijuego
+activate game
+
+game --> user : 5. Presenta pantalla\nde inicio del juego
+deactivate game
+deactivate menu
+
+note over user, game
+  **Resultado:** Usuario inicia la actividad
+  cognitiva deseada sin confusión
+end note
+
+@enduml

@@ -1,0 +1,104 @@
+@startuml Diagrama_de_Componentes
+title Diagrama de Componentes - API Backend Flask
+
+skinparam componentStyle rectangle
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+
+' Definición de colores
+skinparam component {
+    BackgroundColor<<presentation>> #E3F2FD
+    BackgroundColor<<controller>> #BBDEFB
+    BackgroundColor<<service>> #C8E6C9
+    BackgroundColor<<model>> #FFF9C4
+    BackgroundColor<<external>> #F8BBD0
+    BackgroundColor<<config>> #E0E0E0
+    BorderColor #424242
+}
+
+package "Flask Application" {
+    [app.py] as app <<presentation>>
+    [Swagger UI] as swagger <<presentation>>
+}
+
+package "Controllers Layer" <<controller>> {
+    [UserController] as userCtrl <<controller>>
+    [AbecedarioController] as abcCtrl <<controller>>
+}
+
+package "Services Layer" <<service>> {
+    [UserService] as userSvc <<service>>
+    [AbecedarioService] as abcSvc <<service>>
+    [GeminiService] as geminiSvc <<service>>
+}
+
+package "Models / Data Layer" <<model>> {
+    [User Model] as userModel <<model>>
+    [Abecedario Model] as abcModel <<model>>
+}
+
+package "Configuration" <<config>> {
+    [database.py] as dbConfig <<config>>
+}
+
+database "PostgreSQL" {
+    [user table] as userTable
+    [word_game_session] as sessionTable
+}
+
+cloud "External Services" {
+    [Google Gemini AI API] as geminiAPI <<external>>
+}
+
+' Relaciones principales
+app --> userCtrl : uses
+app --> abcCtrl : uses
+app --> dbConfig : configures
+app --> swagger : integrates
+app --> userModel : imports
+app --> abcModel : imports
+
+' Controllers -> Services
+userCtrl --> userSvc : delegates
+abcCtrl --> abcSvc : delegates
+abcCtrl --> geminiSvc : integrates
+
+' Services -> Models
+userSvc --> userModel : uses
+abcSvc --> abcModel : uses
+geminiSvc --> abcSvc : queries
+
+' Services -> External
+geminiSvc --> geminiAPI : HTTP requests
+
+' Models -> Database Config
+userModel --> dbConfig : uses
+abcModel --> dbConfig : uses
+
+' Database Config -> Database
+dbConfig --> userTable : connects
+dbConfig --> sessionTable : connects
+
+' Notas
+note right of userCtrl
+  **Endpoints:**
+  POST /register
+  POST /login
+  GET /users
+end note
+
+note right of abcCtrl
+  **Endpoints:**
+  GET /abecedario/next-challenge/<user_id>
+  POST /abecedario/session
+  GET /abecedario/stats/<user_id>
+  GET /abecedario/history/<user_id>
+  GET /abecedario/evolution/<user_id>
+end note
+
+note right of geminiSvc
+  Genera desafíos adaptativos
+  usando IA de Google Gemini
+end note
+
+@enduml

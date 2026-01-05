@@ -1,0 +1,41 @@
+@startuml HU5_Interfaz_Accesible
+title HU5: Interfaz Accesible
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+
+actor "Adulto Mayor" as user
+participant "Interfaz Unity\n(Menú/Minijuego)" as ui
+
+user -> ui : 1. Accede a la aplicación
+activate ui
+
+ui -> ui : 2. Cargar elementos\naccesibles
+
+ui --> user : 3. Mostrar interfaz con:\n• Botones GRANDES\n• Texto LEGIBLE\n• Contraste ALTO\n• Iconos CLAROS
+note right
+  **Características
+  de Accesibilidad:**
+  
+  ✓ Tamaño de fuente: ≥32pt
+  ✓ Botones: ≥100x100px
+  ✓ Contraste: WCAG AAA
+  ✓ Sin elementos confusos
+  ✓ Retroalimentación visual
+  ✓ Instrucciones claras
+end note
+
+deactivate ui
+
+user -> ui : 4. Interactúa con botones\ny controles
+activate ui
+
+ui --> user : 5. Respuesta visual inmediata\n(feedback claro)
+deactivate ui
+
+note over user, ui
+  **Resultado:** Usuario usa la aplicación
+  de forma intuitiva y sin errores por diseño
+end note
+
+@enduml

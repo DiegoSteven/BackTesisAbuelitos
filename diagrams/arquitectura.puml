@@ -1,0 +1,113 @@
+@startuml Arquitectura_del_Sistema
+title Arquitectura del Sistema - Plataforma de Juegos Cognitivos
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam linetype polyline
+skinparam defaultTextAlignment center
+
+' Estilos optimizados
+skinparam package {
+    BackgroundColor<<presentation>> #E3F2FD
+    BackgroundColor<<logic>> #E8F5E9
+    BackgroundColor<<services>> #F3E5F5
+    BackgroundColor<<data>> #FFF9C4
+    BackgroundColor<<control>> #FFE0B2
+    BorderColor #424242
+    BorderThickness 2
+    FontSize 11
+    FontStyle bold
+    Padding 15
+}
+
+skinparam component {
+    BackgroundColor #FFFFFF
+    BorderColor #616161
+    FontSize 10
+}
+
+skinparam arrow {
+    Color #424242
+    Thickness 2
+}
+
+' ============================================
+' CAPA 1: PRESENTACIÓN
+' ============================================
+package "CAPA DE PRESENTACIÓN\n(Unity 3D)" <<presentation>> {
+    component "Menú Principal" as menu
+    component "Juego Elegido" as game
+}
+
+' ============================================
+' CAPA 2: LÓGICA DEL SISTEMA
+' ============================================
+package "CAPA DE LÓGICA\n(C# - Unity)" <<logic>> {
+    component "Gestor de Sesión" as session
+    component "Registro de Métricas" as metrics
+    component "Gestor de Dificultad" as difficulty
+    component "Integración API" as api
+}
+
+' ============================================
+' CAPA 3: SERVICIOS EXTERNOS
+' ============================================
+package "SERVICIOS EXTERNOS" <<services>> {
+    component "API de IA" as aiAPI #F8BBD0
+    component "Modelo IA" as aiModel #F8BBD0
+}
+
+' ============================================
+' CAPA 4: DATOS
+' ============================================
+package "CAPA DE DATOS" <<data>> {
+    database "Historial" as history
+    storage "Almacenamiento\nLocal" as storage
+}
+
+' ============================================
+' MÓDULO TRANSVERSAL
+' ============================================
+rectangle "GitHub\n(Control Versiones)" as github #FFE0B2
+
+' ============================================
+' FLUJO PRINCIPAL
+' ============================================
+
+' Usuario selecciona juego
+menu -[#2196F3]down-> game : Seleccionar
+
+' Juego -> Gestor de Sesión
+game -[#4CAF50]down-> session : 1. Iniciar sesión
+
+' Flujo de métricas
+session -[#FF9800]right-> metrics : 2. Capturar datos
+metrics -[#FF9800]down-> history : 3. Guardar
+history -[#FF9800]right-> storage
+
+' Flujo de IA
+metrics -[#9C27B0]-> api : 4. Enviar métricas
+api -[#9C27B0]down-> aiAPI : 5. Analizar
+aiAPI <-[#9C27B0]-> aiModel
+api -[#9C27B0]left-> difficulty : 6. Recibir parámetros
+
+' Aplicar configuración
+difficulty -[#E91E63]up-> game : 7. Configurar próxima sesión
+
+' Control de versiones
+github .[#FF6F00].> menu
+github .[#FF6F00].> session
+
+' ============================================
+' LEYENDA
+' ============================================
+legend right
+    |<#2196F3>    | Selección usuario |
+    |<#4CAF50>    | Control de sesión |
+    |<#FF9800>    | Registro de datos |
+    |<#9C27B0>    | Procesamiento IA |
+    |<#E91E63>    | Configuración |
+    |<#FF6F00>    | Versionamiento |
+endlegend
+
+@enduml

@@ -3,11 +3,15 @@ from config.database import db, app
 from controllers.user_controller import UserController
 from controllers.abecedario_controller import AbecedarioController
 from controllers.paseo_controller import paseo_bp
+from controllers.admin_controller import AdminController
+from controllers.memory_game_controller import MemoryGameController
 from flask_swagger_ui import get_swaggerui_blueprint
+
 # Import models to ensure they are registered with SQLAlchemy
 from models.user import User
 from models.abecedario import Abecedario
 from models.paseo import PaseoSession
+from models.memory_game import MemoryGameSession, MemoryGameConfig
 
 # Create the database tables
 with app.app_context():
@@ -50,6 +54,25 @@ app.add_url_rule('/abecedario/daily-summary/<int:user_id>', 'get_daily_summary',
 app.add_url_rule('/abecedario/history/<int:user_id>', 'get_abecedario_history', AbecedarioController.get_history, methods=['GET'])
 app.add_url_rule('/abecedario/evolution/<int:user_id>', 'get_evolution_report', AbecedarioController.get_evolution_report, methods=['GET'])
 app.add_url_rule('/abecedario/final-stats/<int:user_id>', 'get_final_stats', AbecedarioController.get_final_stats, methods=['GET'])
+
+# Memory Game Routes
+app.add_url_rule('/memory-game/config/<int:user_id>', 'get_memory_config', MemoryGameController.get_config, methods=['GET'])
+app.add_url_rule('/memory-game/submit-results', 'submit_memory_results', MemoryGameController.submit_results, methods=['POST'])
+app.add_url_rule('/memory-game/stats/<int:user_id>', 'get_memory_stats', MemoryGameController.get_stats, methods=['GET'])
+app.add_url_rule('/memory-game/reset/<int:user_id>', 'reset_memory_progress', MemoryGameController.reset_progress, methods=['DELETE'])
+
+# Admin Routes
+app.add_url_rule('/admin/memory-sessions', 'admin_memory_sessions', AdminController.get_memory_sessions, methods=['GET'])
+app.add_url_rule('/admin/abecedario-sessions', 'admin_abecedario_sessions', AdminController.get_abecedario_sessions, methods=['GET'])
+app.add_url_rule('/admin/memory-configs', 'admin_memory_configs', AdminController.get_memory_configs, methods=['GET'])
+app.add_url_rule('/admin/stats', 'admin_stats', AdminController.get_admin_stats, methods=['GET'])
+
+# Ruta para servir el dashboard
+@app.route('/admin')
+def admin_dashboard():
+    import os
+    directory = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
+    return send_from_directory(directory, 'admin_dashboard.html')
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cognitive Games Dashboard</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-dark: #0f1015;
+            --bg-card: #1b1e2b;
+            --bg-sidebar: #151722;
+            --text-primary: #ffffff;
+            --text-secondary: #8b92a9;
+            --accent-purple: #bb86fc;
+            --accent-pink: #ff79c6;
+            --accent-cyan: #03dac6;
+            --accent-blue: #3d5afe;
+            --gradient-1: linear-gradient(135deg, #da59ff 0%, #7d4dff 100%);
+            --gradient-2: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
+            --gradient-3: linear-gradient(135deg, #ff512f 0%, #dd2476 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background-color: var(--bg-sidebar);
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            position: fixed;
+            height: 100vh;
+        }
+
+        .logo {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 50px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-primary);
+        }
+
+        .logo span {
+            color: var(--accent-purple);
+        }
+
+        .nav-item {
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            border-radius: 12px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: rgba(187, 134, 252, 0.1);
+            color: var(--accent-purple);
+        }
+
+        .nav-item.active {
+            border-left: 3px solid var(--accent-purple);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 260px;
+            padding: 40px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        .refresh-btn {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .refresh-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 25px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .stat-card.gradient-1 {
+            background: var(--gradient-1);
+        }
+
+        .stat-card.gradient-2 {
+            background: var(--gradient-2);
+        }
+
+        .stat-card.gradient-3 {
+            background: var(--gradient-3);
+        }
+
+        .stat-card h3 {
+            font-size: 14px;
+            opacity: 0.8;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        .stat-card .value {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .stat-card .trend {
+            font-size: 12px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 10px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+
+        /* Charts Section */
+        .charts-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .chart-container {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .chart-header h3 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        /* Tables */
+        .table-container {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 25px;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th {
+            text-align: left;
+            color: var(--text-secondary);
+            font-weight: 500;
+            padding: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Badges */
+        .badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-success {
+            background: rgba(3, 218, 198, 0.15);
+            color: var(--accent-cyan);
+        }
+
+        .badge-warning {
+            background: rgba(255, 121, 198, 0.15);
+            color: var(--accent-pink);
+        }
+
+        .badge-info {
+            background: rgba(61, 90, 254, 0.15);
+            color: var(--accent-blue);
+        }
+
+        .badge-danger {
+            background: rgba(255, 82, 82, 0.15);
+            color: #ff5252;
+        }
+
+        /* Tabs Content */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="logo">
+            <span>⚡</span> Abuelitos Admin
+        </div>
+        <div class="nav-item active" onclick="switchTab('general')">
+            📊 General
+        </div>
+        <div class="nav-item" onclick="switchTab('memory')">
+            🧠 Memory Game
+        </div>
+        <div class="nav-item" onclick="switchTab('abecedario')">
+            🔤 Abecedario
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="header">
+            <h1 id="pageTitle">Dashboard General</h1>
+            <button class="refresh-btn" onclick="loadAllData()">🔄 Actualizar Datos</button>
+        </div>
+
+        <!-- TAB: GENERAL -->
+        <div id="tab-general" class="tab-content active">
+            <div class="stats-grid">
+                <div class="stat-card gradient-1">
+                    <h3>Total Usuarios</h3>
+                    <div class="value" id="totalUsers">-</div>
+                    <span class="trend">👥 Registrados</span>
+                </div>
+                <div class="stat-card gradient-2">
+                    <h3>Partidas Hoy</h3>
+                    <div class="value" id="gamesToday">-</div>
+                    <span class="trend">📅 Actividad Diaria</span>
+                </div>
+                <div class="stat-card gradient-3">
+                    <h3>Total Sesiones</h3>
+                    <div class="value" id="totalGames">-</div>
+                    <span class="trend">🎮 Histórico</span>
+                </div>
+            </div>
+
+            <div class="charts-row">
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <h3>Actividad Semanal</h3>
+                    </div>
+                    <canvas id="activityChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <h3>Distribución por Género</h3>
+                    </div>
+                    <canvas id="genderChart"></canvas>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <h3>👥 Últimos Usuarios Registrados</h3>
+                <table id="usersTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Edad</th>
+                            <th>Género</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="4" class="loading">Cargando...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB: MEMORY GAME -->
+        <div id="tab-memory" class="tab-content">
+            <div class="stats-grid">
+                <div class="stat-card gradient-2">
+                    <h3>Accuracy Promedio</h3>
+                    <div class="value" id="memAvgAccuracy">-%</div>
+                    <span class="trend">🎯 Precisión Global</span>
+                </div>
+                <div class="stat-card" style="background: #2d3446;">
+                    <h3>Nivel Más Común</h3>
+                    <div class="value" style="color: var(--accent-cyan);">Medium</div>
+                    <span class="trend">📊 Dificultad</span>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <h3>🧠 Últimas Sesiones (Memory Game)</h3>
+                <table id="memoryTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Usuario</th>
+                            <th>Dificultad</th>
+                            <th>Pares</th>
+                            <th>Accuracy</th>
+                            <th>Tiempo</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="7" class="loading">Cargando...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <br>
+
+            <div class="table-container">
+                <h3>⚙️ Configuraciones Actuales</h3>
+                <table id="configTable">
+                    <thead>
+                        <tr>
+                            <th>Usuario</th>
+                            <th>Dificultad</th>
+                            <th>Grid</th>
+                            <th>Tiempo Límite</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="4" class="loading">Cargando...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB: ABECEDARIO -->
+        <div id="tab-abecedario" class="tab-content">
+            <div class="stats-grid">
+                <div class="stat-card gradient-3">
+                    <h3>Palabras Completadas</h3>
+                    <div class="value" id="abcCompleted">-</div>
+                    <span class="trend">🔤 Total</span>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <h3>🔤 Últimas Sesiones (Abecedario)</h3>
+                <table id="abecedarioTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Usuario</th>
+                            <th>Palabra</th>
+                            <th>Tiempo</th>
+                            <th>Errores</th>
+                            <th>Pistas</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="7" class="loading">Cargando...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000';
+        let charts = {};
+
+        // Navigation
+        function switchTab(tabName) {
+            // Update nav items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+                if (item.textContent.toLowerCase().includes(tabName)) {
+                    item.classList.add('active');
+                }
+            });
+
+            // Update content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+
+            // Update Title
+            const titles = {
+                'general': 'Dashboard General',
+                'memory': 'Memory Game Stats',
+                'abecedario': 'Abecedario Stats'
+            };
+            document.getElementById('pageTitle').textContent = titles[tabName];
+        }
+
+        // Data Loading
+        async function fetchAPI(endpoint) {
+            try {
+                const response = await fetch(`${API_BASE}${endpoint}`);
+                return await response.json();
+            } catch (error) {
+                console.error(`Error fetching ${endpoint}:`, error);
+                return null;
+            }
+        }
+
+        async function loadAllData() {
+            await Promise.all([
+                loadGeneralStats(),
+                loadMemoryData(),
+                loadAbecedarioData()
+            ]);
+            initCharts();
+        }
+
+        async function loadGeneralStats() {
+            // Users
+            const usersData = await fetchAPI('/users');
+            if (usersData && usersData.users) {
+                document.getElementById('totalUsers').textContent = usersData.users.length;
+
+                const tbody = document.querySelector('#usersTable tbody');
+                tbody.innerHTML = usersData.users.slice(0, 5).map(u => `
+                    <tr>
+                        <td>#${u.id}</td>
+                        <td>${u.nombre}</td>
+                        <td>${u.edad}</td>
+                        <td>${u.genero}</td>
+                    </tr>
+                `).join('');
+            }
+
+            // Global Stats
+            const statsData = await fetchAPI('/admin/stats');
+            if (statsData) {
+                document.getElementById('totalGames').textContent = statsData.total_sessions || 0;
+                document.getElementById('gamesToday').textContent = statsData.sessions_today || 0;
+                document.getElementById('memAvgAccuracy').textContent =
+                    (statsData.average_accuracy ? statsData.average_accuracy.toFixed(1) : 0) + '%';
+            }
+        }
+
+        async function loadMemoryData() {
+            // Sessions
+            const sessionsData = await fetchAPI('/admin/memory-sessions');
+            if (sessionsData && sessionsData.sessions) {
+                const tbody = document.querySelector('#memoryTable tbody');
+                tbody.innerHTML = sessionsData.sessions.map(s => `
+                    <tr>
+                        <td>#${s.session_id}</td>
+                        <td>User ${s.user_id}</td>
+                        <td><span class="badge badge-info">${s.difficulty_level}</span></td>
+                        <td>${s.pairs_found}/${s.total_pairs}</td>
+                        <td>${s.accuracy ? s.accuracy.toFixed(1) : 0}%</td>
+                        <td>${s.elapsed_time ? s.elapsed_time.toFixed(1) : 0}s</td>
+                        <td><span class="badge ${s.completion_status === 'completed' ? 'badge-success' : 'badge-danger'}">${s.completion_status}</span></td>
+                    </tr>
+                `).join('');
+            }
+
+            // Configs
+            const configsData = await fetchAPI('/admin/memory-configs');
+            if (configsData && configsData.configs) {
+                const tbody = document.querySelector('#configTable tbody');
+                tbody.innerHTML = configsData.configs.map(c => `
+                    <tr>
+                        <td>User ${c.user_id}</td>
+                        <td><span class="badge badge-warning">${c.difficulty_label}</span></td>
+                        <td>${c.grid_size}</td>
+                        <td>${c.time_limit}s</td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        async function loadAbecedarioData() {
+            const data = await fetchAPI('/admin/abecedario-sessions');
+            if (data && data.sessions) {
+                document.getElementById('abcCompleted').textContent = data.sessions.length;
+
+                const tbody = document.querySelector('#abecedarioTable tbody');
+                tbody.innerHTML = data.sessions.map(s => `
+                    <tr>
+                        <td>#${s.id}</td>
+                        <td>User ${s.user_id}</td>
+                        <td style="color: var(--accent-cyan); font-weight: bold;">${s.palabra_objetivo}</td>
+                        <td>${s.tiempo_resolucion}s</td>
+                        <td>${s.cantidad_errores}</td>
+                        <td>${s.pistas_usadas}</td>
+                        <td><span class="badge ${s.completado ? 'badge-success' : 'badge-danger'}">${s.completado ? 'Completado' : 'Incompleto'}</span></td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        function initCharts() {
+            // Activity Chart
+            const ctxActivity = document.getElementById('activityChart').getContext('2d');
+            if (charts.activity) charts.activity.destroy();
+
+            charts.activity = new Chart(ctxActivity, {
+                type: 'line',
+                data: {
+                    labels: ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'],
+                    datasets: [{
+                        label: 'Sesiones',
+                        data: [12, 19, 3, 5, 2, 3, 10], // Mock data for demo
+                        borderColor: '#bb86fc',
+                        backgroundColor: 'rgba(187, 134, 252, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // Gender Chart
+            const ctxGender = document.getElementById('genderChart').getContext('2d');
+            if (charts.gender) charts.gender.destroy();
+
+            charts.gender = new Chart(ctxGender, {
+                type: 'doughnut',
+                data: {
+                    labels: ['M', 'F'],
+                    datasets: [{
+                        data: [65, 35], // Mock data
+                        backgroundColor: ['#03dac6', '#ff79c6'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom', labels: { color: '#fff' } } }
+                }
+            });
+        }
+
+        // Init
+        loadAllData();
+        setInterval(loadAllData, 30000);
+    </script>
+</body>
+
+</html>

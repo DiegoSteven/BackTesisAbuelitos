@@ -1,0 +1,44 @@
+@startuml HU3_Ajuste_Adaptativo_IA
+title HU3: Ajuste Adaptativo mediante IA
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+
+actor "Terapeuta" as therapist
+participant "Integración API\n(IntegracionAPI)" as apiIntegration
+participant "API de IA Externa" as aiAPI
+participant "Gestor de Dificultad\n(AjusteDificultad)" as difficulty
+
+therapist -> apiIntegration : 1. Sistema envía\nmétricas del usuario
+activate apiIntegration
+
+apiIntegration -> aiAPI : 2. POST /analizar-desempeno\n{métricas del usuario}
+activate aiAPI
+
+aiAPI -> aiAPI : 3. Analizar con modelo IA:\n• Rendimiento histórico\n• Tendencias\n• Capacidad actual
+note right
+  **Análisis de IA:**
+  • Tasa de aciertos
+  • Tiempo promedio
+  • Errores frecuentes
+  • Progresión
+end note
+
+aiAPI --> apiIntegration : 4. Parámetros de dificultad\nadaptados
+deactivate aiAPI
+
+apiIntegration -> difficulty : 5. Aplicar ajustes
+activate difficulty
+
+difficulty -> difficulty : 6. Configurar próxima sesión:\n• Complejidad\n• Tiempo límite\n• Cantidad de estímulos
+deactivate difficulty
+
+apiIntegration --> therapist : 7. Dificultad ajustada\nautomáticamente
+deactivate apiIntegration
+
+note over therapist, difficulty
+  **Resultado:** La dificultad se adapta de forma
+  personalizada al usuario basado en IA
+end note
+
+@enduml

@@ -1,0 +1,79 @@
+@startuml Casos_de_Uso_Terapeuta
+title Casos de Uso - Terapeuta
+
+left to right direction
+skinparam backgroundColor #FFFFFF
+skinparam actorStyle awesome
+skinparam packageStyle rectangle
+skinparam linetype ortho
+
+' Actores - Terapeuta a la izquierda, Sistema IA a la derecha
+actor "Terapeuta" as therapist <<human>>
+actor "Sistema IA" as system <<system>>
+
+rectangle "Sistema de Juegos Cognitivos" {
+    
+    ' Casos de uso principales
+    usecase "Consultar Historial\nde Usuario" as UC1
+    usecase "Analizar Progreso\nCognitivo" as UC2
+    usecase "Visualizar\nEstadísticas" as UC3
+    
+    ' Funcionalidades del sistema
+    usecase "Generar Reportes" as UC4
+    usecase "Comparar Desempeño\nTemporal" as UC5
+    
+    ' IA
+    usecase "Revisar Ajustes\nde IA" as UC6
+    usecase "Configurar\nAdaptación IA" as UC7
+    
+    ' Base de datos
+    usecase "Acceder Historial\nde Datos" as UC8
+}
+
+' Relaciones principales
+therapist --> UC1
+therapist --> UC2
+therapist --> UC3
+therapist --> UC6
+
+' Inclusiones y extensiones
+UC1 ..> UC8 : <<include>>
+UC2 ..> UC4 : <<include>>
+UC2 ..> UC5 : <<extend>>
+UC3 ..> UC8 : <<include>>
+
+UC6 ..> UC7 : <<extend>>
+
+system --> UC7
+UC7 ..> UC8 : <<access>>
+
+' Notas
+note right of UC1
+  **HU6**: Historial de Progreso
+  Terapeuta accede a registros
+  para evaluar evolución
+end note
+
+note right of UC6
+  **HU3**: Ajuste Adaptativo IA
+  Supervisar personalización
+  automática de dificultad
+end note
+
+note bottom of UC8
+  Datos disponibles:
+  • Sesiones jugadas
+  • Métricas por fecha
+  • Aciertos/Errores
+  • Tiempos de respuesta
+  • Tendencias
+end note
+
+note left of UC2
+  Permite evaluar:
+  • Mejoras cognitivas
+  • Áreas de dificultad
+  • Efectividad del sistema
+end note
+
+@enduml

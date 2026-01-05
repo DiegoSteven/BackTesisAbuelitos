@@ -1,0 +1,51 @@
+@startuml Flujo_Modelo_IA
+title Diagrama de Flujo - Modelo de IA Adaptativo
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam linetype ortho
+skinparam conditionStyle diamond
+
+skinparam activity {
+    BackgroundColor #90EE90
+    BorderColor #2E7D32
+    FontSize 10
+}
+
+skinparam decision {
+    BackgroundColor #FFEB3B
+    BorderColor #F57C00
+    FontSize 10
+}
+
+start
+
+#FFB3BA:Recibir métricas
+de sesión;
+
+:Consultar
+historial;
+
+:Calcular
+estadísticas;
+
+if (Nivel?) then (Bajo)
+  #FFCDD2:Reducir nivel;
+elseif (Alto) then
+  #C8E6C9:Aumentar nivel;
+else (Normal)
+  :Mantener nivel;
+endif
+
+:Analizar
+tendencia;
+
+:Generar
+configuración;
+
+:Enviar parámetros
+al sistema;
+
+stop
+
+@enduml

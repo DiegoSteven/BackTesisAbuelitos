@@ -1,0 +1,83 @@
+@startuml Casos_de_Uso_Sistema
+title Casos de Uso - Sistema Automático
+
+left to right direction
+skinparam backgroundColor #FFFFFF
+skinparam actorStyle awesome
+skinparam packageStyle rectangle
+skinparam linetype ortho
+
+actor "Usuario" as user
+actor "Sistema IA" as ai
+
+rectangle "Sistema de Juegos Cognitivos" {
+    
+    ' Casos de uso automáticos
+    usecase "Registrar\nDesempeño" as UC1
+    usecase "Capturar Métricas\nde Sesión" as UC2
+    usecase "Almacenar\nHistorial" as UC3
+    
+    ' IA
+    usecase "Analizar con\nModelo IA" as UC4
+    usecase "Ajustar\nDificultad" as UC5
+    usecase "Configurar Juego\nEspecífico" as UC6
+    
+    ' Métricas específicas
+    usecase "Registrar Tiempo\nde Respuesta" as UC7
+    usecase "Registrar\nAciertos/Errores" as UC8
+    usecase "Registrar Pistas\nUsadas" as UC9
+}
+
+' Triggers
+user ..> UC2 : <<trigger>>
+
+' Sistema automático
+ai --> UC1
+ai --> UC4
+ai --> UC5
+ai --> UC6
+
+' Relaciones
+UC1 ..> UC2 : <<include>>
+UC2 ..> UC7 : <<include>>
+UC2 ..> UC8 : <<include>>
+UC2 ..> UC9 : <<include>>
+
+UC1 ..> UC3 : <<include>>
+
+UC3 ..> UC4 : <<trigger>>
+UC4 ..> UC5 : <<include>>
+UC5 ..> UC6 : <<include>>
+
+' Notas
+note right of UC1
+  **HU2**: Registro de Desempeño
+  Sistema captura automáticamente
+  aciertos, errores y tiempos
+end note
+
+note right of UC6
+  **HU7**: Configuración Específica
+  Ajustes automáticos según tipo:
+  • Adivinar Palabra: longitud, pistas
+  • Tren Colores: velocidad, cantidad
+  • Memoria: pares, complejidad
+  • Búsqueda: objetos, tiempo
+end note
+
+note bottom of UC4
+  **HU3**: IA Adaptativa
+  Modelo analiza métricas y
+  genera parámetros personalizados
+end note
+
+note left of UC2
+  Métricas capturadas:
+  ✓ Tiempo de resolución
+  ✓ Cantidad de errores
+  ✓ Aciertos conseguidos
+  ✓ Pistas solicitadas
+  ✓ Nivel completado
+end note
+
+@enduml

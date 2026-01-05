@@ -1,0 +1,124 @@
+@startuml Arquitectura_Fisica
+title Diagrama de Arquitectura Física - Sistema de Juegos Cognitivos
+
+left to right direction
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam linetype ortho
+skinparam defaultFontName Arial
+skinparam defaultFontSize 9
+
+' Estilos
+skinparam node {
+    BackgroundColor #E3F2FD
+    BorderColor #1976D2
+    BorderThickness 2
+    FontSize 9
+}
+
+skinparam database {
+    BackgroundColor #FFF9C4
+    BorderColor #F57C00
+    BorderThickness 2
+}
+
+skinparam cloud {
+    BackgroundColor #F8BBD0
+    BorderColor #C2185B
+    BorderThickness 2
+}
+
+skinparam component {
+    BackgroundColor #FFFFFF
+    BorderColor #616161
+    FontSize 8
+}
+
+' ============================================
+' DISPOSITIVOS CLIENTE
+' ============================================
+node "Dispositivos Cliente" as clientNode #E3F2FD {
+    component "Unity Application\n(Windows/Android/iOS)" as unityApp
+    
+    note bottom
+        **Tecnologías:**
+        • Unity 3D
+        • C# Scripts
+        • JSON Communication
+    end note
+}
+
+' ============================================
+' SERVIDOR BACKEND
+' ============================================
+node "Servidor Backend" as backendNode #C8E6C9 {
+    component "Flask API\n(Python 3.x)" as flaskApp
+    component "SQLAlchemy ORM" as orm
+    component "Flask-CORS" as cors
+    component "Flask-Bcrypt" as bcrypt
+    
+    note bottom
+        **Stack:**
+        • Python 3.x
+        • Flask 3.1.1
+        • psycopg2 2.9.11
+        • gunicorn/uwsgi
+    end note
+}
+
+' ============================================
+' BASE DE DATOS
+' ============================================
+database "PostgreSQL\nDatabase Server" as dbServer #FFF9C4 {
+    component "user\ntable" as userDB
+    component "game_session\ntable" as sessionDB
+}
+
+note bottom of dbServer
+    **Base de Datos:**
+    • PostgreSQL 13+
+    • Almacenamiento persistente
+    • Backups automáticos
+end note
+
+' ============================================
+' SERVICIOS EXTERNOS
+' ============================================
+cloud "Google Cloud Platform" as gcp #F8BBD0 {
+    component "Gemini AI API\n(google-generativeai)" as geminiService
+}
+
+note bottom of gcp
+    **Servicio Externo:**
+    • Google Gemini AI
+    • API REST
+    • HTTPS
+end note
+
+' ============================================
+' RED Y CONEXIONES
+' ============================================
+
+clientNode -right-> backendNode : "HTTP/HTTPS\n(REST API)\nJSON"
+
+backendNode -right-> dbServer : "TCP/IP\nPort 5432\nSQL Queries"
+
+backendNode -down-> gcp : "HTTPS\nAPI Calls"
+
+' Componentes internos
+unityApp ..> flaskApp : "API Requests"
+flaskApp ..> orm : uses
+flaskApp ..> cors : uses
+flaskApp ..> bcrypt : uses
+orm ..> dbServer : queries
+
+' Leyenda
+legend right
+    |= Color | Tipo |
+    |<#E3F2FD>| Cliente |
+    |<#C8E6C9>| Servidor |
+    |<#FFF9C4>| Base de Datos |
+    |<#F8BBD0>| Servicio Externo |
+endlegend
+
+@enduml
