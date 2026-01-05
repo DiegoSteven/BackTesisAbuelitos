@@ -5,26 +5,34 @@ from services.abecedario.abecedario_service import AbecedarioService
 
 class GeminiService:
     """
-    Servicio simple para generar palabras adaptativas con Gemini AI
-    Maneja progresión por niveles: facil -> intermedio -> dificil
+    Servicio OPTIMIZADO para generar palabras adaptativas con Gemini AI.
+    
+    ESTRATEGIA DE AHORRO:
+    - Niveles FACIL e INTERMEDIO: Usa palabras predefinidas locales (JSON) → $0 + latencia 0ms
+    - Nivel DIFICIL: Usa sistema de BATCH (lotes de 20 palabras) → 95% menos llamadas API
+    
+    RESULTADO: Ahorro del 95% en costos, soporta 40 usuarios/min con límite RPM=2
     """
+    
+    # 🆕 Buffer de palabras pregeneradas (cache en memoria)
+    _palabra_buffer = []
+    _buffer_size = 20  # Generar 20 palabras por lote
     
     # Configuración de niveles
     NIVELES = {
         'facil': {
-            'palabras_requeridas': 5,  # Debe completar 5 palabras fáciles para avanzar
-            'longitud': '3-4',
-            'distractoras': '0-1',
+            'palabras_requeridas': 5,
+            'usa_ia': False,  # 👉 Usa JSON local
             'descripcion': 'Palabras muy comunes de uso diario'
         },
         'intermedio': {
-            'palabras_requeridas': 5,  # 5 palabras intermedias para avanzar
-            'longitud': '4-6',
-            'distractoras': '1-2',
+            'palabras_requeridas': 5,
+            'usa_ia': False,  # 👉 Usa JSON local
             'descripcion': 'Palabras cotidianas con ligera complejidad'
         },
         'dificil': {
-            'palabras_requeridas': 5,  # 5 palabras difíciles
+            'palabras_requeridas': 5,
+            'usa_ia': True,  # 👉 SOLO AQUÍ usa Gemini (en lotes)
             'longitud': '5-7',
             'distractoras': '0-1',
             'descripcion': 'Palabras más complejas pero conocidas'
@@ -36,39 +44,74 @@ class GeminiService:
         if not api_key:
             raise ValueError("GEMINI_API_KEY no configurada en el archivo .env")
         
-        # Configurar API - usar gemini-2.5-flash (último modelo estable)
         genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel('gemini-2.5-flash')
+        self.model = genai.GenerativeModel('gemini-2.5-flash-lite')
     
     def generate_next_challenge(self, user_id):
-        """Genera desafío adaptativo"""
-        print(f"\n[GEMINI] ==== Generando desafío para user_id: {user_id} ====")
+        """Genera desafío adaptativo usando sistema híbrido local + IA"""
+        print(f"\n[GEMINI] ==== Generando desafío para user_id: {user_id} ====\n")
         
         try:
-            stats, error = AbecedarioService.get_performance_stats(user_id, limit=10)
-            if error:
-                return None, error
+            # PASO 1: Determinar nivel óptimo (lógica en Python, NO en Gemini)
+            nivel_actual = AbecedarioService.determinar_nivel_optimo(user_id)
+            print(f"[GEMINI] Nivel determinado: {nivel_actual.upper()}")
             
-            # Agregar user_id a stats
-            stats['user_id'] = user_id
+            # PASO 2: Verificar si hay cambio de nivel
+            from models.abecedario import Abecedario
+            ultima_sesion = Abecedario.query.filter_by(user_id=user_id).order_by(
+                Abecedario.created_at.desc()
+            ).first()
             
-            nivel_actual = self._determinar_nivel(stats, user_id)
+            nivel_anterior = ultima_sesion.nivel_jugado if ultima_sesion else None
+            cambio_nivel = (nivel_anterior != nivel_actual) if nivel_anterior else True
             
-            # Calcular progreso en el nivel actual
+            # PASO 3: Contar palabras completadas en el nivel
             completadas_nivel = self._contar_completadas_en_nivel(user_id, nivel_actual)
             
-            prompt = self._build_prompt(stats, nivel_actual)
-            response = self.model.generate_content(prompt)
+            # PASO 4: Obtener palabras usadas recientemente (evitar repetición)
+            stats, _ = AbecedarioService.get_performance_stats(user_id, limit=10)
+            historial = stats.get('historial', [])
+            palabras_usadas = [s['palabra'] for s in historial if 'palabra' in s]
             
-            challenge = self._parse_response(response.text)
+            # PASO 5: Generar desafío según nivel (HÍBRIDO + BATCH)
+            if nivel_actual in ['facil', 'intermedio']:
+                # 💾 Modo Local (JSON) - Gratis e instantáneo
+                print(f"[GEMINI] Modo AHORRO: Usando palabra local para nivel {nivel_actual.upper()}")
+                challenge = AbecedarioService.get_palabra_local(nivel_actual, palabras_usadas)
+                
+                if not challenge:
+                    return None, "Error al cargar palabras predefinidas"
+                    
+            else:
+                # 🤖 Modo IA BATCH (Gemini) - Solo para nivel DIFICIL
+                print(f"[GEMINI] Modo TESIS + BATCH: Nivel {nivel_actual.upper()}")
+                
+                # Verificar si hay palabras en el buffer
+                if not self._palabra_buffer:
+                    print(f"[GEMINI BATCH] Buffer vacío, generando {self._buffer_size} palabras...")
+                    self._palabra_buffer = self._generar_lote_palabras(stats, nivel_actual, palabras_usadas)
+                    
+                    if not self._palabra_buffer:
+                        return None, "Error al generar lote de palabras"
+                
+                # Obtener la primera palabra del buffer
+                challenge = self._palabra_buffer.pop(0)
+                print(f"[GEMINI BATCH] Palabra del buffer. Quedan {len(self._palabra_buffer)} en cache.")
+            
+            # PASO 6: Agregar metadata del desafío
             challenge['nivel_dificultad'] = nivel_actual
+            challenge['cambio_nivel'] = cambio_nivel
+            challenge['nivel_anterior'] = nivel_anterior
             challenge['progreso_nivel'] = {
                 'palabras_completadas': completadas_nivel,
                 'palabras_requeridas': 5,
-                'porcentaje': (completadas_nivel / 5 * 100)
+                'porcentaje': round((completadas_nivel / 5) * 100, 1)
             }
             
-            print(f"[GEMINI] Desafío generado: {challenge['palabra_objetivo']} - Nivel: {nivel_actual.upper()} ({completadas_nivel}/5)\n")
+            print(f"[GEMINI] ✅ Desafío generado: '{challenge['palabra_objetivo']}' - Nivel: {nivel_actual.upper()} ({completadas_nivel}/5)")
+            if cambio_nivel:
+                print(f"[GEMINI] 🔄 CAMBIO DE NIVEL: {nivel_anterior or 'N/A'} → {nivel_actual.upper()}")
+            print(f"{'='*70}\n")
             
             return challenge, None
             
@@ -77,64 +120,6 @@ class GeminiService:
             import traceback
             traceback.print_exc()
             return None, str(e)
-    
-    def _determinar_nivel(self, stats, user_id=None):
-        """
-        Determina nivel basado SOLO en el nivel de la última sesión + progreso
-        REGLA SIMPLE: 
-        - Empieza en FACIL
-        - Completa 5 palabras en FACIL → sube a INTERMEDIO
-        - Completa 5 palabras en INTERMEDIO → sube a DIFICIL
-        - 8+ errores en una sesión → baja un nivel
-        """
-        total_sesiones = stats.get('total_sesiones', 0)
-        sesion_reciente_dificil = stats.get('sesion_reciente_dificil', False)
-        
-        # Usuario nuevo: FACIL
-        if total_sesiones == 0:
-            print(f"[NIVEL] Usuario nuevo -> FACIL")
-            return 'facil'
-        
-        # Obtener nivel de la última sesión
-        from models.abecedario import Abecedario
-        ultima_sesion = Abecedario.query.filter_by(
-            user_id=stats.get('user_id')
-        ).order_by(Abecedario.created_at.desc()).first()
-        
-        nivel_anterior = ultima_sesion.nivel_jugado if ultima_sesion and ultima_sesion.nivel_jugado else 'facil'
-        
-        # REGLA 1: Si hubo sesión con 8+ errores, BAJA de nivel
-        if sesion_reciente_dificil:
-            if nivel_anterior == 'dificil':
-                print(f"[NIVEL] Sesión difícil detectada -> BAJA de DIFICIL a INTERMEDIO")
-                return 'intermedio'
-            elif nivel_anterior == 'intermedio':
-                print(f"[NIVEL] Sesión difícil detectada -> BAJA de INTERMEDIO a FACIL")
-                return 'facil'
-            else:
-                print(f"[NIVEL] Sesión difícil detectada -> MANTIENE FACIL")
-                return 'facil'
-        
-        # REGLA 2: Contar palabras completadas desde último cambio
-        completadas_en_nivel = self._contar_completadas_en_nivel(stats.get('user_id'), nivel_anterior)
-        
-        print(f"[NIVEL] Nivel anterior: {nivel_anterior.upper()}, Completadas: {completadas_en_nivel}/5")
-        
-        # REGLA 3: Si completó 5, sube de nivel
-        if completadas_en_nivel >= 5:
-            if nivel_anterior == 'facil':
-                print(f"[NIVEL] 5/5 completadas -> SUBE de FACIL a INTERMEDIO")
-                return 'intermedio'
-            elif nivel_anterior == 'intermedio':
-                print(f"[NIVEL] 5/5 completadas -> SUBE de INTERMEDIO a DIFICIL")
-                return 'dificil'
-            else:
-                print(f"[NIVEL] Permanece en DIFICIL (nivel máximo)")
-                return 'dificil'
-        
-        # REGLA 4: Si no completó 5, mantiene nivel
-        print(f"[NIVEL] Mantiene nivel {nivel_anterior.upper()}")
-        return nivel_anterior
     
     def _contar_completadas_en_nivel(self, user_id, nivel):
         """
@@ -162,16 +147,13 @@ class GeminiService:
         count = query.count()
         return min(count, 5)
     
-    def _build_prompt(self, stats, nivel):
-        """Construye el prompt para Gemini"""
+    def _build_prompt(self, stats, nivel, palabras_usadas=[]):
+        """Construye el prompt para Gemini (SOLO nivel DIFICIL)"""
         config = self.NIVELES[nivel]
         
-        # Obtener historial de palabras usadas (últimas 10)
-        historial = stats.get('historial', [])
-        palabras_usadas = [s['palabra'] for s in historial[:10] if 'palabra' in s]
-        palabras_evitar = ', '.join(palabras_usadas) if palabras_usadas else 'ninguna'
+        palabras_evitar = ', '.join(palabras_usadas[:10]) if palabras_usadas else 'ninguna'
         
-        prompt = f"""Eres un terapeuta cognitivo. Genera UNA palabra en español para un juego de memoria.
+        prompt = f"""Eres un terapeuta cognitivo. Genera {self._buffer_size} PALABRAS DIFERENTES en español para un juego de memoria.
 
 NIVEL ACTUAL: {nivel.upper()}
 - {config['descripcion']}
@@ -186,24 +168,76 @@ RENDIMIENTO DEL USUARIO:
 PALABRAS YA USADAS (NO REPETIR): {palabras_evitar}
 
 REGLAS ESTRICTAS:
-- Palabra común del día a día (NO rebuscada)
-- Apropiada para adultos mayores
+- Palabras comunes del día a día (NO rebuscadas)
+- Apropiadas para adultos mayores
 - TODAS LAS LETRAS EN MAYÚSCULAS (pueden tener acentos y ñ)
 - Letras distractoras también en MAYÚSCULAS
 - NO REPETIR ninguna de las palabras ya usadas arriba
-- Pista clara sin revelar la palabra
+- Cada palabra debe tener su pista clara sin revelar la palabra
 - Formato JSON válido
 
-Devuelve SOLO este JSON:
+Devuelve SOLO este JSON con un array de {self._buffer_size} palabras:
 {{
-  "palabra_objetivo": "JARDÍN",
-  "letras_distractoras": ["L", "M"],
-  "pista_contextual": "Una pista útil y amigable"
+  "palabras": [
+    {{
+      "palabra_objetivo": "JARDÍN",
+      "letras_distractoras": ["L", "M"],
+      "pista_contextual": "Espacio verde con plantas"
+    }},
+    {{
+      "palabra_objetivo": "COCINA",
+      "letras_distractoras": ["T", "R"],
+      "pista_contextual": "Lugar donde se prepara comida"
+    }}
+    ... ({self._buffer_size} palabras en total)
+  ]
 }}
 
-IMPORTANTE: "palabra_objetivo" debe estar COMPLETAMENTE en MAYÚSCULAS (CAFÉ, NIÑO, ÁRBOL, etc.) y ser DIFERENTE a las palabras ya usadas."""
+IMPORTANTE: Todas las "palabra_objetivo" deben estar COMPLETAMENTE en MAYÚSCULAS (CAFÉ, NIÑO, ÁRBOL, etc.) y ser DIFERENTES entre sí y diferentes a las ya usadas."""
         
         return prompt
+    
+    def _generar_lote_palabras(self, stats, nivel, palabras_usadas=[]):
+        """
+        🆕 Genera un lote de 20 palabras de una sola vez (optimización batch)
+        Reduce llamadas API de 20 a 1 (95% ahorro)
+        """
+        print(f"[GEMINI BATCH] Generando lote de {self._buffer_size} palabras para nivel {nivel.upper()}...")
+        
+        try:
+            prompt = self._build_prompt(stats, nivel, palabras_usadas)
+            response = self.model.generate_content(prompt)
+            
+            # Parsear respuesta JSON
+            text = response.text
+            start = text.find('{')
+            end = text.rfind('}') + 1
+            
+            if start == -1 or end <= start:
+                raise ValueError("No se encontró JSON en la respuesta")
+            
+            data = json.loads(text[start:end])
+            
+            if 'palabras' not in data or not isinstance(data['palabras'], list):
+                raise ValueError("Respuesta no contiene array 'palabras'")
+            
+            # Validar y normalizar cada palabra
+            palabras_validas = []
+            for item in data['palabras']:
+                if all(field in item for field in ['palabra_objetivo', 'letras_distractoras', 'pista_contextual']):
+                    # Forzar MAYÚSCULAS
+                    item['palabra_objetivo'] = item['palabra_objetivo'].upper()
+                    item['letras_distractoras'] = [letra.upper() for letra in item['letras_distractoras']]
+                    palabras_validas.append(item)
+            
+            print(f"[GEMINI BATCH] ✅ Generadas {len(palabras_validas)} palabras válidas")
+            return palabras_validas
+            
+        except Exception as e:
+            print(f"[GEMINI BATCH ERROR] {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return []
     
     def _parse_response(self, text):
         """Extrae el JSON de la respuesta y fuerza MAYÚSCULAS"""

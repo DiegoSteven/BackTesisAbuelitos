@@ -2,10 +2,12 @@ from flask import Flask, send_from_directory
 from config.database import db, app
 from controllers.user_controller import UserController
 from controllers.abecedario_controller import AbecedarioController
+from controllers.paseo_controller import paseo_bp
 from flask_swagger_ui import get_swaggerui_blueprint
 # Import models to ensure they are registered with SQLAlchemy
 from models.user import User
 from models.abecedario import Abecedario
+from models.paseo import PaseoSession
 
 # Create the database tables
 with app.app_context():
@@ -24,6 +26,9 @@ swaggerui_blueprint = get_swaggerui_blueprint(
 )
 
 app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
+
+# Register Paseo blueprint
+app.register_blueprint(paseo_bp, url_prefix='/paseo')
 
 # Ruta para servir el archivo swagger.json
 @app.route('/swagger.json')
@@ -44,6 +49,7 @@ app.add_url_rule('/abecedario/stats/<int:user_id>', 'get_abecedario_stats', Abec
 app.add_url_rule('/abecedario/daily-summary/<int:user_id>', 'get_daily_summary', AbecedarioController.get_daily_summary, methods=['GET'])
 app.add_url_rule('/abecedario/history/<int:user_id>', 'get_abecedario_history', AbecedarioController.get_history, methods=['GET'])
 app.add_url_rule('/abecedario/evolution/<int:user_id>', 'get_evolution_report', AbecedarioController.get_evolution_report, methods=['GET'])
+app.add_url_rule('/abecedario/final-stats/<int:user_id>', 'get_final_stats', AbecedarioController.get_final_stats, methods=['GET'])
 
 if __name__ == '__main__':
     app.run(debug=True)

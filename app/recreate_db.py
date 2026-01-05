@@ -4,6 +4,7 @@ Script para recrear la base de datos desde cero
 from config.database import db, app
 from models.user import User
 from models.abecedario import Abecedario
+from models.paseo import PaseoSession 
 
 def recreate_database():
     with app.app_context():
@@ -16,9 +17,9 @@ def recreate_database():
         print("Tablas creadas exitosamente")
         
         # Verificar que las tablas se crearon
-        print("Tablas en la base de datos:")
+        print("\nTablas en la base de datos:")
         for table_name in db.metadata.tables.keys():
-            print(f"- {table_name}")
+            print(f"  ✅ {table_name}")
 
 if __name__ == "__main__":
     recreate_database()
