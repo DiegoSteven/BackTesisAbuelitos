@@ -169,6 +169,7 @@ class MemoryGameService:
         # 5. Actualizar configuración del usuario
 
         new_config_data = ai_analysis['next_session_config']
+        ai_decision = ai_analysis.get('adjustment_decision', 'maintain')
 
         
 
@@ -183,6 +184,14 @@ class MemoryGameService:
         current_config.time_limit = new_config_data.get('time_limit', 60)
 
         current_config.memorization_time = new_config_data.get('memorization_time', 5)
+
+        
+        # 6. Actualizar contador de sesiones consecutivas en MAINTAIN
+        if ai_decision == 'maintain':
+            current_config.consecutive_maintains = getattr(current_config, 'consecutive_maintains', 0) + 1
+        else:
+            # Si sube o baja de nivel, resetear el contador
+            current_config.consecutive_maintains = 0
 
         
 

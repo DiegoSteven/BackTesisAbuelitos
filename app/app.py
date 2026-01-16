@@ -77,6 +77,7 @@ app.add_url_rule('/admin/user-abecedario-sessions/<int:user_id>', 'admin_user_ab
 app.add_url_rule('/admin/user-paseo-sessions/<int:user_id>', 'admin_user_paseo_sessions', AdminController.get_user_paseo_sessions, methods=['GET'])
 app.add_url_rule('/admin/train-sessions', 'admin_train_sessions', AdminController.get_train_sessions, methods=['GET'])
 app.add_url_rule('/admin/user-train-sessions/<int:user_id>', 'admin_user_train_sessions', AdminController.get_user_train_sessions, methods=['GET'])
+app.add_url_rule('/admin/train-configs', 'admin_train_configs', AdminController.get_train_configs, methods=['GET'])
 
 # Ruta para servir el dashboard
 @app.route('/admin')
