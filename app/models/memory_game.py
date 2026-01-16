@@ -24,6 +24,14 @@ class MemoryGameSession(db.Model):
     accuracy_percentage = db.Column(db.Float)
     memory_score = db.Column(db.Float)
     
+    # Métricas de IA (para seguimiento del terapeuta)
+    ai_adjustment_decision = db.Column(db.String(20))  # increase, decrease, maintain
+    ai_reason = db.Column(db.String(500))  # Razón del ajuste
+    ai_memory_assessment = db.Column(db.String(20))  # low, medium, high
+    ai_speed_assessment = db.Column(db.String(20))  # slow, normal, fast
+    ai_accuracy_assessment = db.Column(db.String(20))  # low, medium, high
+    ai_overall_score = db.Column(db.Float)  # 0-10
+    
     # Timestamps
     started_at = db.Column(db.DateTime, default=datetime.utcnow)
     finished_at = db.Column(db.DateTime)
@@ -44,6 +52,14 @@ class MemoryGameSession(db.Model):
             'completion_status': self.completion_status,
             'accuracy': self.accuracy_percentage,
             'memory_score': self.memory_score,
+            'ai_metrics': {
+                'adjustment_decision': self.ai_adjustment_decision,
+                'reason': self.ai_reason,
+                'memory': self.ai_memory_assessment,
+                'speed': self.ai_speed_assessment,
+                'accuracy': self.ai_accuracy_assessment,
+                'overall_score': self.ai_overall_score
+            },
             'started_at': self.started_at.isoformat() if self.started_at else None,
             'finished_at': self.finished_at.isoformat() if self.finished_at else None
         }

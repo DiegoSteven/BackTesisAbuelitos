@@ -1,155 +1,316 @@
 """
 Servicio de adaptación de IA para Memory Game usando Gemini
 """
-from typing import Dict, Any
+import google.generativeai as genai
 import os
 import json
-import google.generativeai as genai
+import logging
+
+logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------
+# CONFIGURACIÓN DE NIVELES (Referencia para Fallback y Límites)
+# ---------------------------------------------------------
+DIFFICULTY_LEVELS = {
+    'tutorial': {'total_pairs': 3, 'grid_size': '2x3', 'time_limit': 60, 'memorization_time': 5},
+    'easy':     {'total_pairs': 4, 'grid_size': '2x4', 'time_limit': 90, 'memorization_time': 5},
+    'medium':   {'total_pairs': 6, 'grid_size': '3x4', 'time_limit': 120, 'memorization_time': 4},
+    'hard':     {'total_pairs': 8, 'grid_size': '2x8', 'time_limit': 150, 'memorization_time': 3},
+    'expert':   {'total_pairs': 10, 'grid_size': '4x5', 'time_limit': 180, 'memorization_time': 3},
+    'master':   {'total_pairs': 12, 'grid_size': '3x8', 'time_limit': 200, 'memorization_time': 2}
+}
+
+LEVEL_ORDER = ['tutorial', 'easy', 'medium', 'hard', 'expert', 'master']
 
 class AIAdapterService:
-    # Configuraciones predefinidas (FALLBACK)
-    DIFFICULTY_CONFIGS = {
-        'tutorial': {'total_pairs': 3, 'grid_size': '2x3', 'time_limit': 60, 'memorization_time': 5},
-        'easy': {'total_pairs': 4, 'grid_size': '2x4', 'time_limit': 90, 'memorization_time': 4},
-        'medium': {'total_pairs': 6, 'grid_size': '3x4', 'time_limit': 120, 'memorization_time': 3},
-        'hard': {'total_pairs': 8, 'grid_size': '4x4', 'time_limit': 180, 'memorization_time': 2}
-    }
-    
     def __init__(self):
-        api_key = os.getenv('GEMINI_API_KEY')
+        api_key = os.environ.get('GEMINI_API_KEY')
         if api_key:
             genai.configure(api_key=api_key)
-            self.model = genai.GenerativeModel('gemini-2.5-flash')
-            self.use_ai = True
+            self.model = genai.GenerativeModel('gemini-2.0-flash-exp')
+            logger.info("✅ Gemini AI configurado correctamente")
         else:
-            print("[MEMORY IA] GEMINI_API_KEY no encontrada. Usando lógica clásica.")
-            self.use_ai = False
+            logger.warning("⚠️ GEMINI_API_KEY no encontrada. Usando modo fallback.")
+            self.model = None
 
-    def analyze_and_recommend(self, session_data: Dict, current_difficulty: str) -> Dict:
+    def analyze_and_recommend(self, user_id, current_config, session_data):
         """
-        Analiza desempeño y recomienda nueva configuración.
-        Intenta usar Gemini; si falla, usa lógica determinista (fallback).
+        Analiza el desempeño y recomienda la nueva configuración.
         """
-        if self.use_ai:
-            try:
-                return self._analyze_with_gemini(session_data, current_difficulty)
-            except Exception as e:
-                print(f"[MEMORY IA ERROR] {e}. Usando fallback.")
-                return self._analyze_fallback(session_data, current_difficulty)
-        else:
-            return self._analyze_fallback(session_data, current_difficulty)
+        try:
+            # 1. Preparar datos para el prompt
+            performance_data = {
+                "current_difficulty": current_config.difficulty_label,
+                "total_pairs": session_data.total_pairs,
+                "pairs_found": session_data.pairs_found,
+                "total_flips": session_data.total_flips,
+                "elapsed_time": session_data.elapsed_time_seconds,
+                "time_limit": current_config.time_limit,
+                "completed": session_data.completion_status == "completed",
+                "accuracy": session_data.accuracy_percentage or 0
+            }
 
-    def _analyze_with_gemini(self, session_data: Dict, current_difficulty: str) -> Dict:
-        """Usa Gemini para decidir la configuración exacta del próximo juego."""
-        
-        # Construir Prompt Estructurado
+            # 2. Intentar usar IA
+            if self.model:
+                try:
+                    return self._analyze_with_ai(performance_data, current_config)
+                except Exception as e:
+                    logger.error(f"❌ Error en Gemini: {str(e)}. Usando fallback.")
+                    return self._analyze_fallback(performance_data, current_config)
+            else:
+                return self._analyze_fallback(performance_data, current_config)
+
+        except Exception as e:
+            logger.error(f"❌ Error crítico en analyze_and_recommend: {str(e)}")
+            # Retornar configuración actual en caso de pánico total
+            return {
+                "ai_analysis": {
+                    "adjustment_decision": "maintain",
+                    "reason": "Error interno del servidor, manteniendo configuración.",
+                    "adjustment_summary": {
+                        "previous_difficulty": current_config.difficulty_label,
+                        "new_difficulty": current_config.difficulty_label,
+                        "changed_fields": []
+                    },
+                    "next_session_config": current_config.to_dict(),
+                    "performance_assessment": {
+                        "overall_score": 0,
+                        "memory_retention": "unknown",
+                        "speed": "unknown",
+                        "accuracy": "unknown"
+                    }
+                }
+            }
+
+    def _analyze_with_ai(self, data, current_config):
         prompt = f"""
-        Actúa como un Terapeuta Cognitivo experto en rehabilitación de adultos mayores.
-        Tu tarea es ajustar la dificultad del "Juego de Memoria" basándote en el desempeño reciente del usuario.
+        Actúa como un sistema experto de ajuste de dificultad para un juego de memoria terapéutico para adultos mayores.
+        
+        DATOS DE LA SESIÓN:
+        - Dificultad actual: {data['current_difficulty']}
+        - Resultado: {"VICTORIA" if data['completed'] else "DERROTA (Tiempo Agotado)"}
+        - Pares encontrados: {data['pairs_found']} de {data['total_pairs']}
+        - Intentos (flips): {data['total_flips']}
+        - Tiempo usado: {data['elapsed_time']}s (Límite: {data['time_limit']}s)
+        - Precisión: {data['accuracy']}%
 
-        CONTEXTO DEL JUEGO:
-        - El usuario debe encontrar pares de cartas.
-        - Dificultades: tutorial (3 pares), easy (4 pares), medium (6 pares), hard (8 pares).
-        - Variables ajustables: Tiempo límite, Tiempo de memorización inicial.
+        REGLAS DE AJUSTE:
+        1. SI PERDIÓ (Tiempo agotado):
+           - DEBE facilitar el juego.
+           - Prioridad: Aumentar 'time_limit' (+15-30s) O reducir 'total_pairs'.
+           - Nunca aumentar dificultad si perdió.
+        
+        2. SI GANÓ (Completado):
+           - Evaluar desempeño (Velocidad y Precisión).
+           - Si fue MUY FÁCIL (Rápido y alta precisión): Aumentar dificultad (Siguiente nivel o reducir tiempo).
+           - Si fue NORMAL: Mantener dificultad o ajustes leves.
+           - Si le costó mucho (Casi se acaba el tiempo): Mantener o facilitar ligeramente (más tiempo).
 
-        CONFIGURACIÓN ACTUAL:
-        - Nivel: {current_difficulty}
-        - Tiempo límite: {session_data.get('time_limit', 'N/A')}s
+        NIVELES DISPONIBLES (Referencia):
+        {json.dumps(DIFFICULTY_LEVELS, indent=2)}
 
-        DESEMPEÑO DE LA SESIÓN:
-        - Estado: {session_data.get('completion_status', 'unknown')}
-        - Tiempo usado: {session_data.get('elapsed_time', 0)}s
-        - Errores cometidos: {session_data.get('mistakes', 0)}
-        - Pares encontrados: {session_data.get('pairs_found', 0)} / {session_data.get('total_pairs', 0)}
-
-        OBJETIVO:
-        - Si el usuario completó rápido y sin errores -> AUMENTAR dificultad (más pares o menos tiempo).
-        - Si el usuario completó pero con dificultad -> MANTENER o ajustar levemente (más tiempo).
-        - Si el usuario NO completó o tuvo muchos errores -> DISMINUIR dificultad (menos pares o más tiempo).
-
-        SALIDA REQUERIDA (JSON):
-        Devuelve un JSON con la configuración EXACTA para Unity.
+        Genera una respuesta JSON ESTRICTA con este formato:
         {{
-            "ai_decision": "LEVEL_UP" | "MAINTAIN" | "LEVEL_DOWN",
-            "reason": "Explicación breve y motivadora para el terapeuta.",
-            "next_config": {{
-                "difficulty_level": "medium",
-                "grid_rows": 3,
-                "grid_cols": 4,
-                "time_limit": 120,
-                "memorization_time": 3
+            "analysis": {{
+                "decision": "increase" | "decrease" | "maintain",
+                "reason": "Explicación corta para el terapeuta",
+                "score": 1-10 (Calidad del juego),
+                "metrics": {{
+                    "memory": "low"|"medium"|"high",
+                    "speed": "slow"|"normal"|"fast",
+                    "accuracy": "low"|"medium"|"high"
+                }}
+            }},
+            "new_config": {{
+                "difficulty_label": "nombre_del_nivel",
+                "total_pairs": int,
+                "grid_size": "FxC" (ej. "3x4"),
+                "time_limit": int,
+                "memorization_time": int
             }}
         }}
-        
-        REGLAS DE CONFIGURACIÓN:
-        - Grid sizes válidos: 2x3 (3 pares), 2x4 (4 pares), 3x4 (6 pares), 4x4 (8 pares).
-        - time_limit: entre 45 y 300 segundos.
-        - memorization_time: entre 1 y 10 segundos.
         """
 
         response = self.model.generate_content(prompt)
-        text = response.text
+        result = json.loads(response.text.strip().replace('```json', '').replace('```', ''))
         
-        # Parsear JSON
-        start = text.find('{')
-        end = text.rfind('}') + 1
-        if start == -1 or end <= start:
-            raise ValueError("No se encontró JSON en la respuesta de IA")
-            
-        result = json.loads(text[start:end])
+        # Validar y asegurar grid_size
+        new_conf = result['new_config']
+        if 'grid_size' not in new_conf:
+             # Fallback si la IA olvida el grid_size
+             new_conf['grid_size'] = self._calculate_grid_size(new_conf['total_pairs'])
+
+        return self._format_response(data, result, current_config)
+
+    def _analyze_fallback(self, data, current_config):
+        """Lógica determinista si falla la IA - Ahora con score calculado"""
+        current_level = data['current_difficulty']
+        idx = LEVEL_ORDER.index(current_level) if current_level in LEVEL_ORDER else 0
         
-        # Estructurar respuesta para el controlador
+        decision = "maintain"
+        reason = "Desempeño estable."
+        new_idx = idx
+        time_adjust = 0
+        
+        # ═══════════════════════════════════════════════════════════
+        # CALCULAR SCORE BASADO EN DESEMPEÑO REAL
+        # ═══════════════════════════════════════════════════════════
+        
+        accuracy = data['accuracy']  # 0-100%
+        time_used = data['elapsed_time']
+        time_limit = data['time_limit']
+        completed = data['completed']
+        
+        # Base score según accuracy (máximo 6 puntos)
+        accuracy_score = (accuracy / 100) * 6
+        
+        # Bonus por velocidad (máximo 2 puntos)
+        if time_limit > 0:
+            time_ratio = time_used / time_limit
+            if time_ratio < 0.5:      # Muy rápido
+                speed_bonus = 2.0
+            elif time_ratio < 0.7:    # Rápido
+                speed_bonus = 1.5
+            elif time_ratio < 0.9:    # Normal
+                speed_bonus = 1.0
+            else:                     # Lento
+                speed_bonus = 0.5
+        else:
+            speed_bonus = 1.0
+        
+        # Bonus por completar (máximo 2 puntos)
+        completion_bonus = 2.0 if completed else 0.0
+        
+        # Calcular score final (0-10)
+        calculated_score = min(10, accuracy_score + speed_bonus + completion_bonus)
+        calculated_score = max(1, calculated_score)  # Mínimo 1
+        
+        # ═══════════════════════════════════════════════════════════
+        # DETERMINAR MÉTRICAS CUALITATIVAS
+        # ═══════════════════════════════════════════════════════════
+        
+        # Memory assessment
+        if accuracy >= 80:
+            memory_assessment = "high"
+        elif accuracy >= 50:
+            memory_assessment = "medium"
+        else:
+            memory_assessment = "low"
+        
+        # Speed assessment
+        if time_limit > 0:
+            if time_ratio < 0.5:
+                speed_assessment = "fast"
+            elif time_ratio < 0.8:
+                speed_assessment = "normal"
+            else:
+                speed_assessment = "slow"
+        else:
+            speed_assessment = "normal"
+        
+        # Accuracy assessment
+        if accuracy >= 80:
+            accuracy_assessment = "high"
+        elif accuracy >= 50:
+            accuracy_assessment = "medium"
+        else:
+            accuracy_assessment = "low"
+        
+        # ═══════════════════════════════════════════════════════════
+        # LÓGICA DE AJUSTE DE DIFICULTAD
+        # ═══════════════════════════════════════════════════════════
+        
+        if not completed:
+            # PERDIÓ: Facilitar
+            decision = "decrease"
+            reason = f"Tiempo agotado con {data['pairs_found']}/{data['total_pairs']} pares. Reduciendo dificultad."
+            if idx > 0:
+                new_idx = idx - 1
+            else:
+                # Ya está en tutorial, dar más tiempo
+                time_adjust = 30
+        else:
+            # GANÓ
+            if accuracy > 80 and time_ratio < 0.6:
+                # Muy fácil -> Subir
+                decision = "increase"
+                reason = f"Excelente desempeño ({accuracy:.0f}% precisión en {time_ratio*100:.0f}% del tiempo). Aumentando dificultad."
+                if idx < len(LEVEL_ORDER) - 1:
+                    new_idx = idx + 1
+            elif accuracy < 50:
+                # Muchos errores -> Mantener para practicar
+                decision = "maintain"
+                reason = f"Completado pero con precisión baja ({accuracy:.0f}%). Manteniendo para practicar."
+            else:
+                # Normal
+                decision = "maintain"
+                reason = f"Buen desempeño ({accuracy:.0f}% precisión). Manteniendo nivel actual."
+
+        # ═══════════════════════════════════════════════════════════
+        # CONSTRUIR RESPUESTA
+        # ═══════════════════════════════════════════════════════════
+        
+        target_level = LEVEL_ORDER[new_idx]
+        base_config = DIFFICULTY_LEVELS[target_level].copy()
+        
+        # Aplicar ajustes finos
+        base_config['time_limit'] += time_adjust
+        base_config['difficulty_label'] = target_level
+
+        result = {
+            "analysis": {
+                "decision": decision,
+                "reason": reason,
+                "score": round(calculated_score, 1),  # ← SCORE CALCULADO, NO FIJO
+                "metrics": {
+                    "memory": memory_assessment,
+                    "speed": speed_assessment,
+                    "accuracy": accuracy_assessment
+                }
+            },
+            "new_config": base_config
+        }
+        
+        return self._format_response(data, result, current_config)
+
+    def _format_response(self, data, ai_result, current_config):
+        """Formatea la respuesta final para el controlador"""
+        new_conf = ai_result['new_config']
+        
+        # Detectar cambios
+        changed_fields = []
+        if new_conf['total_pairs'] != current_config.total_pairs: 
+            changed_fields.append('total_pairs')
+        if new_conf['time_limit'] != current_config.time_limit: 
+            changed_fields.append('time_limit')
+        if new_conf['difficulty_label'] != current_config.difficulty_label: 
+            changed_fields.append('difficulty')
+
         return {
-            'adjustment_decision': result.get('ai_decision', 'MAINTAIN'),
-            'reason': result.get('reason', 'Ajuste por IA'),
-            'next_session_config': result.get('next_config'),
-            'ai_generated': True
+            "ai_analysis": {
+                "adjustment_decision": ai_result['analysis']['decision'],
+                "reason": ai_result['analysis']['reason'],
+                "adjustment_summary": {
+                    "previous_difficulty": current_config.difficulty_label,
+                    "new_difficulty": new_conf['difficulty_label'],
+                    "changed_fields": changed_fields
+                },
+                "next_session_config": new_conf,
+                "performance_assessment": {
+                    "overall_score": ai_result['analysis']['score'],
+                    "memory_retention": ai_result['analysis']['metrics']['memory'],
+                    "speed": ai_result['analysis']['metrics']['speed'],
+                    "accuracy": ai_result['analysis']['metrics']['accuracy']
+                }
+            }
         }
 
-    def _analyze_fallback(self, session_data: Dict, current_difficulty: str) -> Dict:
-        """Lógica determinista original (Backup)"""
-        score = self._evaluate_performance(session_data)
-        adjustment = self._decide_adjustment(score)
-        new_difficulty = self._get_next_difficulty(current_difficulty, adjustment)
-        new_config = self.DIFFICULTY_CONFIGS[new_difficulty].copy()
-        new_config['difficulty_level'] = new_difficulty # Ensure label exists
-        
-        # Mapear grid string a rows/cols para consistencia con IA
-        rows, cols = map(int, new_config.pop('grid_size').split('x'))
-        new_config['grid_rows'] = rows
-        new_config['grid_cols'] = cols
-
-        return {
-            'adjustment_decision': adjustment,
-            'reason': f"Fallback Logic: Score {score}/10 -> {adjustment}",
-            'next_session_config': new_config,
-            'ai_generated': False
-        }
-
-    # --- Métodos auxiliares del Fallback ---
-    def _evaluate_performance(self, session_data: Dict) -> float:
-        if session_data.get('completion_status') != 'completed':
-            return 2.0
-        # Simple score logic
-        mistakes = session_data.get('mistakes', 0)
-        time_ratio = session_data.get('elapsed_time', 0) / session_data.get('time_limit', 1)
-        
-        score = 10 - mistakes
-        if time_ratio < 0.5: score += 2
-        return max(0, min(10, score))
-
-    def _decide_adjustment(self, score: float) -> str:
-        if score >= 8: return "LEVEL_UP"
-        if score <= 4: return "LEVEL_DOWN"
-        return "MAINTAIN"
-
-    def _get_next_difficulty(self, current: str, adjustment: str) -> str:
-        levels = ['tutorial', 'easy', 'medium', 'hard']
-        try:
-            idx = levels.index(current)
-        except:
-            return 'easy'
-            
-        if adjustment == "LEVEL_UP" and idx < len(levels)-1: idx += 1
-        if adjustment == "LEVEL_DOWN" and idx > 0: idx -= 1
-        return levels[idx]
+    def _calculate_grid_size(self, total_pairs):
+        """Helper para calcular grid si falta"""
+        total_cards = total_pairs * 2
+        if total_cards <= 6: return "2x3"
+        if total_cards <= 8: return "2x4"
+        if total_cards <= 12: return "3x4"
+        if total_cards <= 16: return "2x8"
+        if total_cards <= 20: return "4x5"
+        return "3x8" # Max 24 cartas

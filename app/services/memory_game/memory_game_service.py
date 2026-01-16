@@ -1,6 +1,6 @@
 """
 
-Servicio de lÃ³gica de negocio para el juego de memoria
+Servicio de lógica de negocio para el juego de memoria
 
 """
 
@@ -26,7 +26,7 @@ class MemoryGameService:
 
         """
 
-        Obtiene la configuraciÃ³n actual del usuario.
+        Obtiene la configuración actual del usuario.
 
         Si no existe, crea una con valores por defecto.
 
@@ -38,7 +38,7 @@ class MemoryGameService:
 
         if not config:
 
-            # Crear configuraciÃ³n por defecto
+            # Crear configuración por defecto
 
             config = MemoryGameConfig(user_id=user_id)
 
@@ -72,11 +72,11 @@ class MemoryGameService:
 
         """
 
-        Guarda la sesiÃ³n y usa IA para generar nueva configuraciÃ³n
+        Guarda la sesión y usa IA para generar nueva configuración
 
         """
 
-        # 1. Obtener configuraciÃ³n actual
+        # 1. Obtener configuración actual
 
         current_config = MemoryGameConfig.query.filter_by(user_id=user_id).first()
 
@@ -90,7 +90,7 @@ class MemoryGameService:
 
         
 
-        # 2. Guardar sesiÃ³n
+        # 2. Guardar sesión
 
         session = MemoryGameSession(
 
@@ -130,31 +130,59 @@ class MemoryGameService:
 
         
 
-        # 3. Analizar con IA y obtener nueva configuraciÃ³n
+        # 3. Analizar con IA y obtener nueva configuración
 
-        ai_analysis = self.ai_adapter.analyze_and_recommend(
+        ai_result = self.ai_adapter.analyze_and_recommend(
 
-            session_data, 
+            user_id, 
 
-            current_config.difficulty_label
+            current_config,
+
+            session
 
         )
 
         
 
-        # 4. Actualizar configuraciÃ³n del usuario
+        # 4. Guardar métricas de IA en la sesión (para seguimiento del terapeuta)
 
-        new_config = ai_analysis['next_session_config']
+        ai_analysis = ai_result['ai_analysis']
 
-        current_config.total_pairs = new_config['total_pairs']
+        assessment = ai_analysis.get('performance_assessment', {})
 
-        current_config.grid_size = new_config['grid_size']
+        
 
-        current_config.time_limit = new_config['time_limit']
+        session.ai_adjustment_decision = ai_analysis.get('adjustment_decision')
 
-        current_config.memorization_time = new_config['memorization_time']
+        session.ai_reason = ai_analysis.get('reason')
 
-        current_config.difficulty_label = new_config['difficulty_label']
+        session.ai_memory_assessment = assessment.get('memory_retention')
+
+        session.ai_speed_assessment = assessment.get('speed')
+
+        session.ai_accuracy_assessment = assessment.get('accuracy')
+
+        session.ai_overall_score = assessment.get('overall_score')
+
+        
+
+        # 5. Actualizar configuración del usuario
+
+        new_config_data = ai_analysis['next_session_config']
+
+        
+
+        # ✅ CORRECCIÓN: Usar .get() o acceso directo seguro
+
+        current_config.difficulty_label = new_config_data.get('difficulty_label', current_config.difficulty_label)
+
+        current_config.total_pairs = new_config_data.get('total_pairs', current_config.total_pairs)
+
+        current_config.grid_size = new_config_data.get('grid_size', '2x3')
+
+        current_config.time_limit = new_config_data.get('time_limit', 60)
+
+        current_config.memorization_time = new_config_data.get('memorization_time', 5)
 
         
 
@@ -198,7 +226,7 @@ class MemoryGameService:
 
         """
 
-        Obtiene estadÃ­sticas del usuario
+        Obtiene estadísticas del usuario
 
         """
 
@@ -239,6 +267,7 @@ class MemoryGameService:
             'recent_sessions': [s.to_dict() for s in sessions[-5:]]
 
         }
+        
     def reset_user_progress(self, user_id: int) -> dict:
         """
         Resetea el progreso del usuario eliminando sesiones y configuración
@@ -257,4 +286,3 @@ class MemoryGameService:
             'config_deleted': config_deleted,
             'message': f'Usuario {user_id} reseteado a nivel tutorial'
         }
-
