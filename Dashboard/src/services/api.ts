@@ -30,5 +30,11 @@ export const getTrainConfigs = () => api.get('/admin/train-configs');
 export const getUsers = () => api.get('/users');
 export const getUserMemorySessions = (userId: number) =>
     api.get(`/admin/user-memory-sessions/${userId}`);
+export const getUserAbecedarioSessions = (userId: number) =>
+    api.get(`/admin/user-abecedario-sessions/${userId}`);
+export const getUserPaseoSessions = (userId: number) =>
+    api.get(`/admin/user-paseo-sessions/${userId}`);
+export const getUserTrainSessions = (userId: number) =>
+    api.get(`/admin/user-train-sessions/${userId}`);
 
 export default api;
