@@ -52,7 +52,7 @@ class GeminiService:
         print(f"\n[GEMINI] ==== Generando desafío para user_id: {user_id} ====\n")
         
         try:
-            # PASO 1: Determinar nivel óptimo (lógica en Python, NO en Gemini)
+            # PASO 1: Determinar nivel óptimo (ahora con análisis mejorado)
             nivel_actual = AbecedarioService.determinar_nivel_optimo(user_id)
             print(f"[GEMINI] Nivel determinado: {nivel_actual.upper()}")
             
@@ -68,12 +68,21 @@ class GeminiService:
             # PASO 3: Contar palabras completadas en el nivel
             completadas_nivel = self._contar_completadas_en_nivel(user_id, nivel_actual)
             
-            # PASO 4: Obtener palabras usadas recientemente (evitar repetición)
+            # PASO 4: Obtener estadísticas de rendimiento (ahora más detalladas)
             stats, _ = AbecedarioService.get_performance_stats(user_id, limit=10)
             historial = stats.get('historial', [])
             palabras_usadas = [s['palabra'] for s in historial if 'palabra' in s]
             
-            # PASO 5: Generar desafío según nivel (HÍBRIDO + BATCH)
+            # PASO 5: Obtener análisis de rendimiento reciente (NUEVO)
+            analisis = AbecedarioService.analizar_necesidad_bajar_nivel(user_id)
+            precision_reciente = analisis.get('precision', 0)
+            razon_nivel = analisis.get('razon', 'N/A')
+            
+            print(f"[GEMINI] 📊 Análisis de rendimiento:")
+            print(f"  - Precisión reciente: {precision_reciente:.1f}%")
+            print(f"  - Estado: {razon_nivel}")
+            
+            # PASO 6: Generar desafío según nivel (HÍBRIDO + BATCH)
             if nivel_actual in ['facil', 'intermedio']:
                 # 💾 Modo Local (JSON) - Gratis e instantáneo
                 print(f"[GEMINI] Modo AHORRO: Usando palabra local para nivel {nivel_actual.upper()}")
@@ -84,11 +93,15 @@ class GeminiService:
                     
             else:
                 # 🤖 Modo IA BATCH (Gemini) - Solo para nivel DIFICIL
-                print(f"[GEMINI] Modo TESIS + BATCH: Nivel {nivel_actual.upper()}")
+                print(f"[GEMINI] Modo IA: Nivel {nivel_actual.upper()}")
                 
                 # Verificar si hay palabras en el buffer
                 if not self._palabra_buffer:
                     print(f"[GEMINI BATCH] Buffer vacío, generando {self._buffer_size} palabras...")
+                    # Agregar las estadísticas al stats para el prompt
+                    stats['precision_reciente'] = precision_reciente
+                    stats['razon_nivel'] = razon_nivel
+                    
                     self._palabra_buffer = self._generar_lote_palabras(stats, nivel_actual, palabras_usadas)
                     
                     if not self._palabra_buffer:
@@ -98,7 +111,7 @@ class GeminiService:
                 challenge = self._palabra_buffer.pop(0)
                 print(f"[GEMINI BATCH] Palabra del buffer. Quedan {len(self._palabra_buffer)} en cache.")
             
-            # PASO 6: Agregar metadata del desafío
+            # PASO 7: Agregar metadata del desafío (mejorada)
             challenge['nivel_dificultad'] = nivel_actual
             challenge['cambio_nivel'] = cambio_nivel
             challenge['nivel_anterior'] = nivel_anterior
@@ -107,8 +120,14 @@ class GeminiService:
                 'palabras_requeridas': 5,
                 'porcentaje': round((completadas_nivel / 5) * 100, 1)
             }
+            challenge['metricas_rendimiento'] = {
+                'precision_reciente': round(precision_reciente, 1),
+                'razonamiento': razon_nivel,
+                'tasa_exito_general': stats.get('tasa_exito', 0)
+            }
             
             print(f"[GEMINI] ✅ Desafío generado: '{challenge['palabra_objetivo']}' - Nivel: {nivel_actual.upper()} ({completadas_nivel}/5)")
+            print(f"[GEMINI] 📈 Precisión reciente: {precision_reciente:.1f}%")
             if cambio_nivel:
                 print(f"[GEMINI] 🔄 CAMBIO DE NIVEL: {nivel_anterior or 'N/A'} → {nivel_actual.upper()}")
             print(f"{'='*70}\n")
@@ -153,27 +172,38 @@ class GeminiService:
         
         palabras_evitar = ', '.join(palabras_usadas[:10]) if palabras_usadas else 'ninguna'
         
-        prompt = f"""Eres un terapeuta cognitivo. Genera {self._buffer_size} PALABRAS DIFERENTES en español para un juego de memoria.
+        # Obtener métricas adicionales (NUEVO)
+        precision_reciente = stats.get('precision_reciente', 0)
+        razon_nivel = stats.get('razon_nivel', 'Sin datos')
+        
+        prompt = f"""Eres un terapeuta cognitivo. Genera {self._buffer_size} PALABRAS DIFERENTES en español para un juego de memoria adaptativo.
 
 NIVEL ACTUAL: {nivel.upper()}
 - {config['descripcion']}
 - Longitud: {config['longitud']} letras
 - Letras distractoras: {config['distractoras']}
 
-RENDIMIENTO DEL USUARIO:
+RENDIMIENTO DEL USUARIO (últimas sesiones):
 - Total sesiones: {stats.get('total_sesiones', 0)}
-- Tasa de éxito: {stats.get('tasa_exito', 0)}%
-- Promedio errores: {stats.get('promedio_errores', 0)}
+- Tasa de éxito global: {stats.get('tasa_exito', 0):.1f}%
+- Precisión reciente: {precision_reciente:.1f}%
+- Promedio errores: {stats.get('promedio_errores', 0):.1f}
+- Estado actual: {razon_nivel}
 
 PALABRAS YA USADAS (NO REPETIR): {palabras_evitar}
 
+INSTRUCCIONES PARA ADAPTAR DIFICULTAD:
+- Si precisión reciente < 50%: Usa palabras MÁS COMUNES del día a día
+- Si precisión reciente 50-80%: Usa palabras comunes con ligera complejidad
+- Si precisión reciente > 80%: Puedes usar palabras conocidas más desafiantes
+
 REGLAS ESTRICTAS:
-- Palabras comunes del día a día (NO rebuscadas)
-- Apropiadas para adultos mayores
+- Palabras apropiadas para adultos mayores (fáciles de relacionar con su vida cotidiana)
 - TODAS LAS LETRAS EN MAYÚSCULAS (pueden tener acentos y ñ)
 - Letras distractoras también en MAYÚSCULAS
 - NO REPETIR ninguna de las palabras ya usadas arriba
 - Cada palabra debe tener su pista clara sin revelar la palabra
+- Ajustar complejidad según la precisión reciente del usuario
 - Formato JSON válido
 
 Devuelve SOLO este JSON con un array de {self._buffer_size} palabras:
@@ -193,7 +223,10 @@ Devuelve SOLO este JSON con un array de {self._buffer_size} palabras:
   ]
 }}
 
-IMPORTANTE: Todas las "palabra_objetivo" deben estar COMPLETAMENTE en MAYÚSCULAS (CAFÉ, NIÑO, ÁRBOL, etc.) y ser DIFERENTES entre sí y diferentes a las ya usadas."""
+IMPORTANTE: 
+1. Todas las "palabra_objetivo" deben estar COMPLETAMENTE en MAYÚSCULAS (CAFÉ, NIÑO, ÁRBOL, etc.)
+2. Ser DIFERENTES entre sí y diferentes a las ya usadas
+3. Adaptar la complejidad según la precisión reciente del usuario ({precision_reciente:.0f}%)"""
         
         return prompt
     

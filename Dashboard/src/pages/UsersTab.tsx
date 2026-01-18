@@ -18,7 +18,7 @@ interface User {
 
 interface UserStats {
     memoria: { total_sesiones: number; promedio_accuracy: number; sesiones_completadas: number };
-    abecedario: { total_sesiones: number; palabras_completadas: number; tiempo_promedio: number };
+    abecedario: { total_sesiones: number; palabras_completadas: number; tiempo_promedio: number; nivel_alcanzado: string };
     paseo: { total_sesiones: number; victorias: number; precision_promedio: number };
     trenes: { total_sesiones: number; total_aciertos: number; precision_promedio: number };
 }
@@ -49,6 +49,8 @@ const UsersTab = () => {
     const [selectedGame, setSelectedGame] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const [expandedSessions, setExpandedSessions] = useState<Set<string>>(new Set());
+    const [expandedLevels, setExpandedLevels] = useState<Set<string>>(new Set());
 
     // Fetch Users
     const { data: usersData, isLoading: usersLoading } = useQuery({
@@ -78,7 +80,10 @@ const UsersTab = () => {
             let res;
             switch (selectedGame) {
                 case 'memoria': res = await getUserMemorySessions(selectedUser); break;
-                case 'abecedario': res = await getUserAbecedarioSessions(selectedUser); break;
+                case 'abecedario': 
+                    res = await getUserAbecedarioSessions(selectedUser);
+                    // El backend devuelve 'sesiones' para Abecedario, no 'sessions'
+                    return res.data.sesiones || [];
                 case 'paseo': res = await getUserPaseoSessions(selectedUser); break;
                 case 'trenes': res = await getUserTrainSessions(selectedUser); break;
                 default: return [];
@@ -324,8 +329,9 @@ const UsersTab = () => {
                                 color="#339af0"
                                 stats={[
                                     { label: 'Total Sesiones', value: userStatsData.abecedario.total_sesiones },
-                                    { label: 'Completadas', value: userStatsData.abecedario.palabras_completadas },
-                                    { label: 'Tiempo Promedio', value: `${userStatsData.abecedario.tiempo_promedio.toFixed(1)}s` }
+                                    { label: 'Palabras Completadas', value: userStatsData.abecedario.palabras_completadas },
+                                    { label: 'Tiempo Promedio', value: `${userStatsData.abecedario.tiempo_promedio.toFixed(1)}s` },
+                                    { label: 'Nivel Alcanzado', value: userStatsData.abecedario.nivel_alcanzado.toUpperCase() }
                                 ]}
                             />
                             <GameSummaryCard
@@ -370,34 +376,196 @@ const UsersTab = () => {
                                 {sessionsLoading ? (
                                     <div className="loading">Cargando sesiones...</div>
                                 ) : gameSessions && gameSessions.length > 0 ? (
-                                    <div className="table-container">
-                                        <table>
-                                            <thead>
-                                                {selectedGame === 'memoria' && (
-                                                    <tr>
-                                                        <th>ID</th>
-                                                        <th>Dificultad</th>
-                                                        <th>Grid</th>
-                                                        <th>Accuracy</th>
-                                                        <th>Tiempo</th>
-                                                        <th>Estado</th>
-                                                        <th>Score IA</th>
-                                                        <th>Decisión</th>
-                                                        <th>Métricas</th>
-                                                    </tr>
-                                                )}
-                                                {selectedGame === 'abecedario' && (
-                                                    <tr>
-                                                        <th>ID</th>
-                                                        <th>Nivel</th>
-                                                        <th>Palabra</th>
-                                                        <th>Tiempo</th>
-                                                        <th>Errores</th>
-                                                        <th>Pistas</th>
-                                                        <th>Estado</th>
-                                                    </tr>
-                                                )}
-                                                {selectedGame === 'paseo' && (
+                                    selectedGame === 'abecedario' ? (
+                                        // Vista jerárquica para Abecedario: Sesión -> Niveles -> Palabras
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                            {gameSessions.map((sesion: any) => {
+                                                const sesionKey = sesion.fecha;
+                                                const isSessionExpanded = expandedSessions.has(sesionKey);
+                                                
+                                                return (
+                                                    <div key={sesionKey} style={{
+                                                        background: '#1a1d2e',
+                                                        borderRadius: '12px',
+                                                        border: '1px solid #2c2e33',
+                                                        overflow: 'hidden'
+                                                    }}>
+                                                        {/* Header de Sesión */}
+                                                        <div
+                                                            onClick={() => {
+                                                                const newExpanded = new Set(expandedSessions);
+                                                                if (isSessionExpanded) {
+                                                                    newExpanded.delete(sesionKey);
+                                                                } else {
+                                                                    newExpanded.add(sesionKey);
+                                                                }
+                                                                setExpandedSessions(newExpanded);
+                                                            }}
+                                                            style={{
+                                                                padding: '20px',
+                                                                cursor: 'pointer',
+                                                                background: isSessionExpanded ? 'linear-gradient(90deg, rgba(51, 154, 240, 0.1) 0%, transparent 100%)' : 'transparent',
+                                                                borderLeft: isSessionExpanded ? '4px solid #339af0' : '4px solid transparent',
+                                                                display: 'flex',
+                                                                justifyContent: 'space-between',
+                                                                alignItems: 'center',
+                                                                transition: 'all 0.2s ease'
+                                                            }}
+                                                        >
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flex: 1 }}>
+                                                                <div style={{ fontSize: '1.5em' }}>
+                                                                    {isSessionExpanded ? '▼' : '▶'}
+                                                                </div>
+                                                                <div>
+                                                                    <div style={{ fontWeight: 'bold', fontSize: '1.2em', color: '#339af0' }}>
+                                                                        📅 Sesión: {sesion.fecha}
+                                                                    </div>
+                                                                    <div style={{ fontSize: '0.9em', color: '#888', marginTop: '5px' }}>
+                                                                        {sesion.resumen.total_palabras} palabras • {sesion.resumen.palabras_completadas} completadas • {sesion.resumen.tiempo_total.toFixed(1)}s total
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div style={{
+                                                                padding: '8px 15px',
+                                                                background: 'rgba(51, 154, 240, 0.2)',
+                                                                borderRadius: '20px',
+                                                                fontSize: '0.9em',
+                                                                color: '#339af0'
+                                                            }}>
+                                                                {((sesion.resumen.palabras_completadas / sesion.resumen.total_palabras) * 100).toFixed(0)}% completado
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        {/* Niveles (colapsable) */}
+                                                        {isSessionExpanded && (
+                                                            <div style={{ padding: '10px 20px 20px 60px' }}>
+                                                                {sesion.niveles.map((nivel: any) => {
+                                                                    const levelKey = `${sesionKey}-${nivel.nivel}`;
+                                                                    const isLevelExpanded = expandedLevels.has(levelKey);
+                                                                    
+                                                                    return (
+                                                                        <div key={levelKey} style={{
+                                                                            marginBottom: '10px',
+                                                                            background: '#232635',
+                                                                            borderRadius: '8px',
+                                                                            border: '1px solid #2c2e33'
+                                                                        }}>
+                                                                            {/* Header de Nivel */}
+                                                                            <div
+                                                                                onClick={() => {
+                                                                                    const newExpanded = new Set(expandedLevels);
+                                                                                    if (isLevelExpanded) {
+                                                                                        newExpanded.delete(levelKey);
+                                                                                    } else {
+                                                                                        newExpanded.add(levelKey);
+                                                                                    }
+                                                                                    setExpandedLevels(newExpanded);
+                                                                                }}
+                                                                                style={{
+                                                                                    padding: '15px',
+                                                                                    cursor: 'pointer',
+                                                                                    display: 'flex',
+                                                                                    justifyContent: 'space-between',
+                                                                                    alignItems: 'center',
+                                                                                    transition: 'all 0.2s ease'
+                                                                                }}
+                                                                            >
+                                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                                                                    <div style={{ fontSize: '1.2em' }}>
+                                                                                        {isLevelExpanded ? '▼' : '▶'}
+                                                                                    </div>
+                                                                                    <span className="badge" style={{
+                                                                                        background: nivel.nivel === 'dificil' ? '#ff6b6b' :
+                                                                                                   nivel.nivel === 'intermedio' ? '#ffd93d' : '#51cf66',
+                                                                                        padding: '5px 12px',
+                                                                                        borderRadius: '5px',
+                                                                                        fontWeight: 'bold',
+                                                                                        fontSize: '0.9em'
+                                                                                    }}>
+                                                                                        {nivel.nivel.toUpperCase()}
+                                                                                    </span>
+                                                                                    <span style={{ color: '#aaa' }}>
+                                                                                        {nivel.palabras.length} palabra{nivel.palabras.length !== 1 ? 's' : ''}
+                                                                                    </span>
+                                                                                </div>
+                                                                            </div>
+                                                                            
+                                                                            {/* Palabras del nivel */}
+                                                                            {isLevelExpanded && (
+                                                                                <div style={{ padding: '0 15px 15px 45px' }}>
+                                                                                    <table style={{ width: '100%', fontSize: '0.9em' }}>
+                                                                                        <thead>
+                                                                                            <tr style={{ borderBottom: '1px solid #2c2e33' }}>
+                                                                                                <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>Palabra</th>
+                                                                                                <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>Hora</th>
+                                                                                                <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>Tiempo</th>
+                                                                                                <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>Errores</th>
+                                                                                                <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>Pistas</th>
+                                                                                                <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>Estado</th>
+                                                                                            </tr>
+                                                                                        </thead>
+                                                                                        <tbody>
+                                                                                            {nivel.palabras.map((palabra: any, idx: number) => (
+                                                                                                <tr key={idx} style={{ borderBottom: '1px solid #1a1d2e' }}>
+                                                                                                    <td style={{ padding: '10px' }}>
+                                                                                                        <strong>{palabra.palabra}</strong>
+                                                                                                    </td>
+                                                                                                    <td style={{ padding: '10px', color: '#888' }}>
+                                                                                                        {palabra.hora}
+                                                                                                    </td>
+                                                                                                    <td style={{ padding: '10px' }}>
+                                                                                                        {palabra.tiempo.toFixed(1)}s
+                                                                                                    </td>
+                                                                                                    <td style={{ 
+                                                                                                        padding: '10px',
+                                                                                                        color: palabra.errores > 2 ? '#ff6b6b' : 'inherit'
+                                                                                                    }}>
+                                                                                                        {palabra.errores}
+                                                                                                    </td>
+                                                                                                    <td style={{ padding: '10px' }}>
+                                                                                                        {palabra.pistas}
+                                                                                                    </td>
+                                                                                                    <td style={{ padding: '10px' }}>
+                                                                                                        <span style={{ 
+                                                                                                            color: palabra.completado ? '#51cf66' : '#aaa'
+                                                                                                        }}>
+                                                                                                            {palabra.completado ? '✓ Completado' : '✗ Incompleto'}
+                                                                                                        </span>
+                                                                                                    </td>
+                                                                                                </tr>
+                                                                                            ))}
+                                                                                        </tbody>
+                                                                                    </table>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    ) : (
+                                        // Vista de tabla para otros juegos
+                                        <div className="table-container">
+                                            <table>
+                                                <thead>
+                                                    {selectedGame === 'memoria' && (
+                                                        <tr>
+                                                            <th>ID</th>
+                                                            <th>Dificultad</th>
+                                                            <th>Grid</th>
+                                                            <th>Accuracy</th>
+                                                            <th>Tiempo</th>
+                                                            <th>Estado</th>
+                                                            <th>Score IA</th>
+                                                            <th>Decisión</th>
+                                                            <th>Métricas</th>
+                                                        </tr>
+                                                    )}
+                                                    {selectedGame === 'paseo' && (
                                                     <tr>
                                                         <th>ID</th>
                                                         <th>Nivel</th>
@@ -416,52 +584,29 @@ const UsersTab = () => {
                                                         <th>Estado</th>
                                                     </tr>
                                                 )}
-                                            </thead>
-                                            <tbody>
-                                                {gameSessions.map((session: any) => (
-                                                    <tr key={session.id || session.session_id} style={
-                                                        selectedGame === 'abecedario' && session.cambio_nivel ? {
-                                                            backgroundColor: 'rgba(81, 207, 102, 0.1)',
-                                                            borderLeft: '4px solid #51cf66'
-                                                        } : {}
-                                                    }>
-                                                        {selectedGame === 'memoria' && (
-                                                            <>
-                                                                <td>{session.session_id}</td>
-                                                                <td><span className="badge">{session.difficulty_level}</span></td>
-                                                                <td>{session.grid_size}</td>
-                                                                <td>{session.accuracy?.toFixed(1)}%</td>
-                                                                <td>{session.elapsed_time?.toFixed(1)}s</td>
-                                                                <td>{session.completion_status}</td>
-                                                                <td><strong>{session.ai_metrics?.overall_score || '-'}</strong>/10</td>
-                                                                <td>{formatDecision(session.ai_metrics?.adjustment_decision)}</td>
-                                                                <td>
-                                                                    <div style={{ display: 'flex', gap: '5px', fontSize: '0.8em' }}>
-                                                                        {formatMetricBadge(session.ai_metrics?.memory)}
-                                                                        {formatMetricBadge(session.ai_metrics?.speed)}
-                                                                    </div>
-                                                                </td>
-                                                            </>
-                                                        )}
-                                                        {selectedGame === 'abecedario' && (
-                                                            <>
-                                                                <td>{session.id}</td>
-                                                                <td>
-                                                                    <span className="badge">{session.nivel_jugado || 'facil'}</span>
-                                                                    {session.cambio_nivel && <span style={{ marginLeft: '5px' }}>🆙</span>}
-                                                                </td>
-                                                                <td><strong>{session.palabra_objetivo}</strong></td>
-                                                                <td>{session.tiempo_resolucion?.toFixed(1)}s</td>
-                                                                <td style={{ color: session.cantidad_errores > 2 ? '#ff6b6b' : 'inherit' }}>{session.cantidad_errores}</td>
-                                                                <td>{session.pistas_usadas}</td>
-                                                                <td>
-                                                                    <span style={{ color: session.completado ? '#51cf66' : '#aaa' }}>
-                                                                        {session.completado ? 'Completado' : 'Incompleto'}
-                                                                    </span>
-                                                                </td>
-                                                            </>
-                                                        )}
-                                                        {selectedGame === 'paseo' && (
+                                                </thead>
+                                                <tbody>
+                                                    {gameSessions.map((session: any) => (
+                                                        <tr key={session.id || session.session_id}>
+                                                            {selectedGame === 'memoria' && (
+                                                                <>
+                                                                    <td>{session.session_id}</td>
+                                                                    <td><span className="badge">{session.difficulty_level}</span></td>
+                                                                    <td>{session.grid_size}</td>
+                                                                    <td>{session.accuracy?.toFixed(1)}%</td>
+                                                                    <td>{session.elapsed_time?.toFixed(1)}s</td>
+                                                                    <td>{session.completion_status}</td>
+                                                                    <td><strong>{session.ai_metrics?.overall_score || '-'}</strong>/10</td>
+                                                                    <td>{formatDecision(session.ai_metrics?.adjustment_decision)}</td>
+                                                                    <td>
+                                                                        <div style={{ display: 'flex', gap: '5px', fontSize: '0.8em' }}>
+                                                                            {formatMetricBadge(session.ai_metrics?.memory)}
+                                                                            {formatMetricBadge(session.ai_metrics?.speed)}
+                                                                        </div>
+                                                                    </td>
+                                                                </>
+                                                            )}
+                                                            {selectedGame === 'paseo' && (
                                                             <>
                                                                 <td>{session.id}</td>
                                                                 <td><span className="badge">{session.nivel_dificultad}</span></td>
@@ -475,23 +620,24 @@ const UsersTab = () => {
                                                                 <td style={{ fontSize: '0.9em', color: '#aaa' }}>{session.recomendacion_siguiente || '-'}</td>
                                                             </>
                                                         )}
-                                                        {selectedGame === 'trenes' && (
-                                                            <>
-                                                                <td>{session.id}</td>
-                                                                <td>{session.train_speed?.toFixed(1)}</td>
-                                                                <td>{session.color_count}</td>
-                                                                <td>{session.correct_routing}</td>
-                                                                <td style={{ color: (session.crash_count || 0) > 0 ? '#ff6b6b' : 'inherit', fontWeight: (session.crash_count || 0) > 0 ? 'bold' : 'normal' }}>
-                                                                    {session.crash_count || 0}
-                                                                </td>
-                                                                <td><span className="badge">{session.completion_status}</span></td>
-                                                            </>
-                                                        )}
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                                            {selectedGame === 'trenes' && (
+                                                                <>
+                                                                    <td>{session.id}</td>
+                                                                    <td>{session.train_speed?.toFixed(1)}</td>
+                                                                    <td>{session.color_count}</td>
+                                                                    <td>{session.correct_routing}</td>
+                                                                    <td style={{ color: (session.crash_count || 0) > 0 ? '#ff6b6b' : 'inherit', fontWeight: (session.crash_count || 0) > 0 ? 'bold' : 'normal' }}>
+                                                                        {session.crash_count || 0}
+                                                                    </td>
+                                                                    <td><span className="badge">{session.completion_status}</span></td>
+                                                                </>
+                                                            )}
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    )
                                 ) : (
                                     <div style={{ textAlign: 'center', color: '#666', padding: '20px' }}>
                                         No hay sesiones registradas para este juego.

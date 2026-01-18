@@ -52,20 +52,31 @@ class AbecedarioService:
             # Usar el nivel que Unity envía (el que se determinó en /next-challenge)
             nivel_jugado = session_data['nivel_dificultad']
             
+            # 🆕 Usar fecha_juego del cliente si está disponible, sino usar hoy
+            if 'fecha_juego' in session_data:
+                # Viene del script de prueba o Unity con fecha específica
+                if isinstance(session_data['fecha_juego'], str):
+                    from datetime import datetime
+                    fecha_juego = datetime.strptime(session_data['fecha_juego'], '%Y-%m-%d').date()
+                else:
+                    fecha_juego = session_data['fecha_juego']
+                print(f"[SERVICE] Usando fecha_juego del cliente: {fecha_juego}")
+            else:
+                fecha_juego = date.today()
+                print(f"[SERVICE] Usando fecha actual: {fecha_juego}")
+            
             # Verificar si hubo cambio de nivel O cambio de día
             ultima_sesion = Abecedario.query.filter_by(user_id=user_id).order_by(Abecedario.created_at.desc()).first()
             cambio_nivel = False
-            
-            fecha_hoy = date.today()
             
             if not ultima_sesion:
                 # Primera sesión del usuario
                 cambio_nivel = True
                 print(f"[SERVICE] PRIMERA SESIÓN - Nivel inicial: {nivel_jugado}")
-            elif ultima_sesion.fecha_juego < fecha_hoy:
+            elif ultima_sesion.fecha_juego < fecha_juego:
                 # 🆕 NUEVO DÍA: Resetear COMPLETAMENTE (regresa a FÁCIL y 0/5)
                 cambio_nivel = True
-                print(f"[SERVICE] NUEVO DÍA DETECTADO: {ultima_sesion.fecha_juego} -> {fecha_hoy}")
+                print(f"[SERVICE] NUEVO DÍA DETECTADO: {ultima_sesion.fecha_juego} -> {fecha_juego}")
                 print(f"[SERVICE] Reseteando a FÁCIL con progreso 0/5")
             elif ultima_sesion.nivel_jugado and ultima_sesion.nivel_jugado != nivel_jugado:
                 # Cambio de nivel (subió o bajó)
@@ -80,7 +91,7 @@ class AbecedarioService:
                 cantidad_errores=session_data['cantidad_errores'],
                 pistas_usadas=session_data['pistas_usadas'],
                 completado=session_data['completado'],
-                fecha_juego=date.today(),
+                fecha_juego=fecha_juego,  # ✅ Ahora usa la fecha correcta
                 nivel_jugado=nivel_jugado,
                 cambio_nivel=cambio_nivel
             )
@@ -88,7 +99,7 @@ class AbecedarioService:
             db.session.add(nueva_sesion)
             db.session.commit()
             
-            print(f"[SERVICE] Sesión guardada - Nivel: {nivel_jugado}, Completado: {session_data['completado']}, Cambio: {cambio_nivel}")
+            print(f"[SERVICE] Sesión guardada - Fecha: {fecha_juego}, Nivel: {nivel_jugado}, Completado: {session_data['completado']}, Cambio: {cambio_nivel}")
             
             return nueva_sesion, None
             
@@ -117,45 +128,99 @@ class AbecedarioService:
     @staticmethod
     def analizar_necesidad_bajar_nivel(user_id):
         """
-        NUEVA LÓGICA: Analiza las últimas 5 palabras para detectar frustración.
-        Si el usuario falló en 4 de las últimas 5 palabras, baja de nivel.
+        ANÁLISIS MEJORADO: Evalúa el desempeño reciente del usuario.
+        Considera múltiples factores como la precisión, errores y tiempo.
         
         Returns:
-            bool: True si debe bajar de nivel, False si no
+            dict: {'debe_bajar': bool, 'razon': str, 'precision': float}
         """
         try:
-            # Obtener las últimas 5 sesiones (completadas o no)
-            ultimas_5 = Abecedario.query.filter_by(
+            # Obtener las últimas 5 sesiones (como Paseo)
+            ultimas_sesiones = Abecedario.query.filter_by(
                 user_id=user_id
             ).order_by(Abecedario.created_at.desc()).limit(5).all()
             
-            if len(ultimas_5) < 5:
-                return False  # No hay suficiente historial
+            if len(ultimas_sesiones) < 3:
+                return {
+                    'debe_bajar': False,
+                    'razon': 'Insuficiente historial',
+                    'precision': 0
+                }
             
-            # Contar cuántas NO fueron completadas
-            fallidas = sum(1 for s in ultimas_5 if not s.completado)
+            # MÉTRICAS DE RENDIMIENTO
+            total_sesiones = len(ultimas_sesiones)
+            completadas = sum(1 for s in ultimas_sesiones if s.completado)
+            precision = (completadas / total_sesiones) * 100
             
-            debe_bajar = fallidas >= 4
+            # Promedios
+            promedio_errores = sum(s.cantidad_errores for s in ultimas_sesiones) / total_sesiones
+            promedio_tiempo = sum(s.tiempo_resolucion for s in ultimas_sesiones if s.completado) / max(completadas, 1)
+            pistas_totales = sum(s.pistas_usadas for s in ultimas_sesiones)
             
-            if debe_bajar:
-                print(f"[ANÁLISIS] FRUSTRACIÓN DETECTADA: {fallidas}/5 palabras falladas → BAJAR NIVEL")
-            else:
-                print(f"[ANÁLISIS] Rendimiento aceptable: {fallidas}/5 falladas")
+            print(f"[ANÁLISIS] Últimas {total_sesiones} sesiones:")
+            print(f"  - Precisión: {precision:.1f}% ({completadas}/{total_sesiones})")
+            print(f"  - Promedio errores: {promedio_errores:.1f}")
+            print(f"  - Promedio tiempo: {promedio_tiempo:.1f}s")
+            print(f"  - Pistas usadas: {pistas_totales}")
             
-            return debe_bajar
+            # CRITERIOS DE FRUSTRACIÓN (similar a Paseo)
+            # 1. Precisión muy baja (<40%)
+            if precision < 40:
+                return {
+                    'debe_bajar': True,
+                    'razon': f'Precisión muy baja ({precision:.0f}%)',
+                    'precision': precision
+                }
+            
+            # 2. Muchos errores consistentes (promedio >5 y precisión <60%)
+            if promedio_errores > 5 and precision < 60:
+                return {
+                    'debe_bajar': True,
+                    'razon': f'Muchos errores ({promedio_errores:.1f} promedio) y baja precisión ({precision:.0f}%)',
+                    'precision': precision
+                }
+            
+            # 3. Tiempos muy altos con baja tasa de éxito (<50% y >60s promedio)
+            if precision < 50 and promedio_tiempo > 60:
+                return {
+                    'debe_bajar': True,
+                    'razon': f'Tiempos altos ({promedio_tiempo:.0f}s) con baja precisión ({precision:.0f}%)',
+                    'precision': precision
+                }
+            
+            # 4. Dependencia excesiva de pistas (>10 en 5 sesiones)
+            if pistas_totales > 10 and precision < 70:
+                return {
+                    'debe_bajar': True,
+                    'razon': f'Exceso de pistas ({pistas_totales}) y precisión moderada ({precision:.0f}%)',
+                    'precision': precision
+                }
+            
+            print(f"[ANÁLISIS] Rendimiento aceptable - mantener nivel")
+            return {
+                'debe_bajar': False,
+                'razon': 'Rendimiento aceptable',
+                'precision': precision
+            }
             
         except Exception as e:
             print(f"[ANÁLISIS ERROR] {str(e)}")
-            return False
+            import traceback
+            traceback.print_exc()
+            return {
+                'debe_bajar': False,
+                'razon': 'Error en análisis',
+                'precision': 0
+            }
     
     @staticmethod
     def determinar_nivel_optimo(user_id):
         """
-        LÓGICA OPTIMIZADA DE NIVELES:
+        LÓGICA MEJORADA DE NIVELES (similar a Paseo):
         1. Usuario nuevo → FACIL
-        2. Nuevo día (fecha_juego < hoy) → FACIL (reseteo completo)
-        3. Falló 4 de las últimas 5 palabras → BAJA un nivel
-        4. Completó 5 palabras en el nivel actual → SUBE de nivel
+        2. Nuevo día → FACIL (reseteo completo para comparar evolución)
+        3. Análisis de rendimiento reciente → Si desempeño bajo, BAJA nivel
+        4. Completó 5 palabras consecutivas en nivel → SUBE de nivel
         5. Caso contrario → MANTIENE nivel
         
         Returns:
@@ -164,43 +229,55 @@ class AbecedarioService:
         try:
             fecha_hoy = date.today()
             
-            # Obtener última sesión para saber nivel actual
+            # Obtener última sesión
             ultima_sesion = Abecedario.query.filter_by(
                 user_id=user_id
             ).order_by(Abecedario.created_at.desc()).first()
             
-            # Usuario nuevo
+            # REGLA 1: Usuario nuevo
             if not ultima_sesion:
                 print("[NIVEL] Usuario nuevo → FACIL")
                 return 'facil'
             
-            # 🆕 NUEVO DÍA: Resetear a FACIL para comparar evolución
+            # REGLA 2: Nuevo día (resetear a FACIL)
             if ultima_sesion.fecha_juego < fecha_hoy:
                 print(f"[NIVEL] Nuevo día ({ultima_sesion.fecha_juego} -> {fecha_hoy}) → Resetear a FACIL")
                 return 'facil'
             
             nivel_actual = ultima_sesion.nivel_jugado or 'facil'
             
-            # REGLA 1: Detectar frustración (4 de 5 falladas)
-            debe_bajar = AbecedarioService.analizar_necesidad_bajar_nivel(user_id)
+            # REGLA 3: Analizar rendimiento reciente (NUEVO - similar a Paseo)
+            analisis = AbecedarioService.analizar_necesidad_bajar_nivel(user_id)
             
-            if debe_bajar:
+            if analisis['debe_bajar']:
+                print(f"[NIVEL] {analisis['razon']}")
+                
+                # Bajar de nivel según el actual
                 if nivel_actual == 'dificil':
-                    print(f"[NIVEL] Frustración detectada → BAJA de DIFICIL a INTERMEDIO")
-                    return 'intermedio'
+                    # Si la precisión es MUY baja (<30%), bajar directo a FACIL
+                    if analisis['precision'] < 30:
+                        print(f"[NIVEL] BAJA de DIFICIL → FACIL (frustración severa)")
+                        return 'facil'
+                    else:
+                        print(f"[NIVEL] BAJA de DIFICIL → INTERMEDIO")
+                        return 'intermedio'
+                        
                 elif nivel_actual == 'intermedio':
-                    print(f"[NIVEL] Frustración detectada → BAJA de INTERMEDIO a FACIL")
+                    print(f"[NIVEL] BAJA de INTERMEDIO → FACIL")
                     return 'facil'
-                else:
-                    print(f"[NIVEL] Frustración detectada pero ya en FACIL → MANTIENE FACIL")
+                    
+                else:  # Ya está en FACIL
+                    print(f"[NIVEL] Ya en FACIL, mantiene nivel")
                     return 'facil'
             
-            # REGLA 2: Contar palabras completadas en nivel actual desde último cambio
+            # REGLA 4: Contar palabras completadas consecutivas en nivel actual
+            # Buscar el último cambio de nivel
             ultima_sesion_cambio = Abecedario.query.filter_by(
                 user_id=user_id,
                 cambio_nivel=True
             ).order_by(Abecedario.created_at.desc()).first()
             
+            # Consulta para sesiones desde el último cambio
             query = Abecedario.query.filter_by(
                 user_id=user_id,
                 nivel_jugado=nivel_actual,
@@ -210,24 +287,46 @@ class AbecedarioService:
             if ultima_sesion_cambio:
                 query = query.filter(Abecedario.created_at >= ultima_sesion_cambio.created_at)
             
-            completadas_en_nivel = min(query.count(), 5)
+            completadas_en_nivel = query.count()
             
-            print(f"[NIVEL] Nivel actual: {nivel_actual.upper()}, Completadas: {completadas_en_nivel}/5")
+            # Calcular precisión en el nivel actual
+            sesiones_en_nivel = Abecedario.query.filter_by(
+                user_id=user_id,
+                nivel_jugado=nivel_actual
+            )
             
-            # REGLA 3: Si completó 5, sube de nivel
+            if ultima_sesion_cambio:
+                sesiones_en_nivel = sesiones_en_nivel.filter(
+                    Abecedario.created_at >= ultima_sesion_cambio.created_at
+                )
+            
+            total_en_nivel = sesiones_en_nivel.count()
+            precision_nivel = (completadas_en_nivel / total_en_nivel * 100) if total_en_nivel > 0 else 0
+            
+            print(f"[NIVEL] Nivel actual: {nivel_actual.upper()}")
+            print(f"  - Completadas: {completadas_en_nivel}/5")
+            print(f"  - Precisión en nivel: {precision_nivel:.1f}%")
+            
+            # REGLA 5: Si completó 5 palabras con buena precisión, sube de nivel
             if completadas_en_nivel >= 5:
-                if nivel_actual == 'facil':
-                    print(f"[NIVEL] 5/5 completadas → SUBE de FACIL a INTERMEDIO")
-                    return 'intermedio'
-                elif nivel_actual == 'intermedio':
-                    print(f"[NIVEL] 5/5 completadas → SUBE de INTERMEDIO a DIFICIL")
-                    return 'dificil'
+                # Verificar que tenga buena precisión (>70%) antes de subir
+                if precision_nivel >= 70:
+                    if nivel_actual == 'facil':
+                        print(f"[NIVEL] ✅ 5/5 completadas con {precision_nivel:.0f}% precisión → SUBE a INTERMEDIO")
+                        return 'intermedio'
+                    elif nivel_actual == 'intermedio':
+                        print(f"[NIVEL] ✅ 5/5 completadas con {precision_nivel:.0f}% precisión → SUBE a DIFICIL")
+                        return 'dificil'
+                    else:  # Ya está en DIFICIL
+                        print(f"[NIVEL] ✅ Permanece en DIFICIL (nivel máximo)")
+                        return 'dificil'
                 else:
-                    print(f"[NIVEL] Permanece en DIFICIL (nivel máximo)")
-                    return 'dificil'
+                    # Completó 5 pero con baja precisión - mantener nivel
+                    print(f"[NIVEL] ⚠️ Completó 5/5 pero precisión baja ({precision_nivel:.0f}%) → Mantiene {nivel_actual.upper()}")
+                    return nivel_actual
             
-            # REGLA 4: Mantener nivel
-            print(f"[NIVEL] Mantiene nivel {nivel_actual.upper()}")
+            # REGLA 6: Mantener nivel actual
+            print(f"[NIVEL] Mantiene nivel {nivel_actual.upper()} ({completadas_en_nivel}/5 completadas)")
             return nivel_actual
             
         except Exception as e:
@@ -235,6 +334,7 @@ class AbecedarioService:
             import traceback
             traceback.print_exc()
             return 'facil'  # Fallback seguro
+
     
     @staticmethod
     def get_performance_stats(user_id, limit=10):

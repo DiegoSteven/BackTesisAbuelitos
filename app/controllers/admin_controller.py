@@ -87,12 +87,50 @@ class AdminController:
                 'sesiones_completadas': sum([1 for s in memory_sessions if s.completion_status == 'completed'])
             }
             
-            # Stats de Abecedario  
-            abecedario_sessions = Abecedario.query.filter_by(user_id=user_id).all()
+            # Stats de Abecedario - CORREGIDO: Agrupar por sesiones de juego (por día)
+            abecedario_palabras = Abecedario.query.filter_by(user_id=user_id).all()
+            
+            # Agrupar palabras por fecha (una sesión = un día de juego)
+            sesiones_por_dia = {}
+            niveles_alcanzados = []  # Para rastrear niveles alcanzados
+            
+            for palabra in abecedario_palabras:
+                fecha = palabra.fecha_juego
+                if fecha not in sesiones_por_dia:
+                    sesiones_por_dia[fecha] = {
+                        'palabras_totales': 0,
+                        'palabras_completadas': 0,
+                        'tiempo_total': 0
+                    }
+                sesiones_por_dia[fecha]['palabras_totales'] += 1
+                if palabra.completado:
+                    sesiones_por_dia[fecha]['palabras_completadas'] += 1
+                sesiones_por_dia[fecha]['tiempo_total'] += palabra.tiempo_resolucion
+                
+                # Rastrear niveles alcanzados
+                if palabra.nivel_jugado:
+                    niveles_alcanzados.append(palabra.nivel_jugado)
+            
+            # Determinar el nivel máximo alcanzado
+            nivel_alcanzado = 'ninguno'
+            if niveles_alcanzados:
+                if 'dificil' in niveles_alcanzados:
+                    nivel_alcanzado = 'dificil'
+                elif 'intermedio' in niveles_alcanzados:
+                    nivel_alcanzado = 'intermedio'
+                elif 'facil' in niveles_alcanzados:
+                    nivel_alcanzado = 'facil'
+            
+            # Calcular estadísticas
+            total_sesiones_abc = len(sesiones_por_dia)  # Una sesión por día
+            palabras_completadas_total = sum([s['palabras_completadas'] for s in sesiones_por_dia.values()])
+            tiempo_total = sum([s['tiempo_total'] for s in sesiones_por_dia.values()])
+            
             abecedario_stats = {
-                'total_sesiones': len(abecedario_sessions),
-                'palabras_completadas': sum([1 for s in abecedario_sessions if s.completado]),
-                'tiempo_promedio': sum([s.tiempo_resolucion for s in abecedario_sessions]) / len(abecedario_sessions) if abecedario_sessions else 0
+                'total_sesiones': total_sesiones_abc,  # Sesiones de juego (días jugados)
+                'palabras_completadas': palabras_completadas_total,  # Total de palabras completadas
+                'tiempo_promedio': tiempo_total / total_sesiones_abc if total_sesiones_abc > 0 else 0,  # Tiempo promedio por sesión
+                'nivel_alcanzado': nivel_alcanzado  # Nivel máximo alcanzado
             }
             
             # Stats de Paseo
@@ -263,18 +301,76 @@ class AdminController:
     def get_user_abecedario_sessions(user_id):
         """
         GET /admin/user-abecedario-sessions/<user_id>
-        Obtiene todas las sesiones de abecedario de un usuario específico
+        Obtiene sesiones de abecedario agrupadas por fecha y nivel
+        Estructura: Sesión (por fecha) -> Niveles -> Palabras
         """
         try:
-            sessions = Abecedario.query.filter_by(user_id=user_id).\
-                order_by(Abecedario.created_at.desc()).\
+            palabras = Abecedario.query.filter_by(user_id=user_id).\
+                order_by(Abecedario.fecha_juego.desc(), Abecedario.created_at.asc()).\
                 all()
+            
+            # Agrupar por FECHA (sesión)
+            sesiones = {}
+            for palabra in palabras:
+                fecha = palabra.fecha_juego.isoformat()
+                
+                if fecha not in sesiones:
+                    sesiones[fecha] = {
+                        'fecha': fecha,
+                        'niveles': {},
+                        'resumen': {
+                            'total_palabras': 0,
+                            'palabras_completadas': 0,
+                            'tiempo_total': 0
+                        }
+                    }
+                
+                # Agrupar por NIVEL dentro de cada sesión
+                nivel = palabra.nivel_jugado or 'facil'
+                if nivel not in sesiones[fecha]['niveles']:
+                    sesiones[fecha]['niveles'][nivel] = {
+                        'nivel': nivel,
+                        'palabras': []
+                    }
+                
+                # Agregar palabra al nivel correspondiente
+                sesiones[fecha]['niveles'][nivel]['palabras'].append({
+                    'palabra': palabra.palabra_objetivo,
+                    'completado': palabra.completado,
+                    'tiempo': palabra.tiempo_resolucion,
+                    'errores': palabra.cantidad_errores,
+                    'pistas': palabra.pistas_usadas,
+                    'hora': palabra.created_at.strftime('%H:%M:%S')
+                })
+                
+                # Actualizar resumen de la sesión
+                sesiones[fecha]['resumen']['total_palabras'] += 1
+                if palabra.completado:
+                    sesiones[fecha]['resumen']['palabras_completadas'] += 1
+                sesiones[fecha]['resumen']['tiempo_total'] += palabra.tiempo_resolucion
+            
+            # Convertir dict a lista ordenada
+            sesiones_lista = []
+            for fecha_key in sorted(sesiones.keys(), reverse=True):
+                sesion = sesiones[fecha_key]
+                
+                # Convertir niveles a lista ordenada
+                niveles_lista = []
+                for nivel_key in ['facil', 'intermedio', 'dificil']:
+                    if nivel_key in sesion['niveles']:
+                        niveles_lista.append(sesion['niveles'][nivel_key])
+                
+                sesion['niveles'] = niveles_lista
+                sesiones_lista.append(sesion)
             
             return jsonify({
                 'success': True,
-                'sessions': Abecedario.to_collection_dict(sessions)
+                'total_sesiones': len(sesiones_lista),
+                'sesiones': sesiones_lista
             }), 200
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             return jsonify({
                 'success': False,
                 'error': str(e)
@@ -310,7 +406,14 @@ class AdminController:
         try:
             # Total de sesiones por juego
             memory_count = MemoryGameSession.query.count()
-            abecedario_count = Abecedario.query.count()
+            
+            # ABECEDARIO - Contar sesiones agrupadas por usuario y día
+            abecedario_query = db.session.query(
+                Abecedario.user_id,
+                Abecedario.fecha_juego
+            ).distinct().all()
+            abecedario_count = len(abecedario_query)  # Sesiones únicas (usuario + día)
+            
             paseo_count = PaseoSession.query.count()
             train_count = TrainGameSession.query.count()
             
@@ -326,9 +429,16 @@ class AdminController:
             def count_today(model, date_field):
                 return model.query.filter(func.date(date_field) == today).count()
 
+            # Abecedario hoy - Contar sesiones únicas (usuario + día)
+            abecedario_today = db.session.query(
+                Abecedario.user_id
+            ).filter(
+                Abecedario.fecha_juego == today
+            ).distinct().count()
+
             sessions_today = (
                 count_today(MemoryGameSession, MemoryGameSession.finished_at) +
-                count_today(Abecedario, Abecedario.created_at) +
+                abecedario_today +
                 count_today(PaseoSession, PaseoSession.created_at) +
                 count_today(TrainGameSession, TrainGameSession.finished_at)
             )
@@ -342,9 +452,16 @@ class AdminController:
                 def count_day(model, date_field):
                     return model.query.filter(func.date(date_field) == day).count()
                 
+                # Abecedario - Contar sesiones únicas por día
+                abecedario_day = db.session.query(
+                    Abecedario.user_id
+                ).filter(
+                    Abecedario.fecha_juego == day
+                ).distinct().count()
+                
                 count = (
                     count_day(MemoryGameSession, MemoryGameSession.finished_at) +
-                    count_day(Abecedario, Abecedario.created_at) +
+                    abecedario_day +
                     count_day(PaseoSession, PaseoSession.created_at) +
                     count_day(TrainGameSession, TrainGameSession.finished_at)
                 )
