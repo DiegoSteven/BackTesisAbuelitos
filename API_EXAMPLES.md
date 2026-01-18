@@ -372,7 +372,7 @@ GET http://localhost:5000/abecedario/evolution/1
 
 2. **Las tablas se crean automáticamente**: Flask con SQLAlchemy crea las tablas al iniciar (`db.create_all()`)
 
-3. **Tabla en base de datos**: `word_game_session` (nombre de tabla legacy, pero la clase se llama `Abecedario`)
+3. **Tabla en base de datos**: `abecedario_session`
 
 4. **Anti-repetición**: El sistema evita repetir las últimas 10 palabras jugadas
 

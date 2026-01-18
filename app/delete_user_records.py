@@ -27,8 +27,8 @@ with app.app_context():
     result = db.session.execute(text(f"DELETE FROM memory_game_configs WHERE user_id = {USER_ID}"))
     print(f"  ✓ Memory Game Configs eliminadas: {result.rowcount}")
     
-    # Borrar Abecedario (nombre correcto: word_game_session)
-    result = db.session.execute(text(f"DELETE FROM word_game_session WHERE user_id = {USER_ID}"))
+    # Borrar Abecedario (abecedario_session)
+    result = db.session.execute(text(f"DELETE FROM abecedario_session WHERE user_id = {USER_ID}"))
     print(f"  ✓ Abecedario Sessions eliminadas: {result.rowcount}")
     
     # Borrar Paseo (nombre correcto: paseo_session)

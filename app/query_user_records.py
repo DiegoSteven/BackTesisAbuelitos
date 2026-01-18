@@ -31,8 +31,8 @@ with app.app_context():
     count = result.fetchone()[0]
     print(f"Memory Game Configs: {count}")
     
-    # Abecedario (word_game_session)
-    result = db.session.execute(text(f"SELECT COUNT(*) FROM word_game_session WHERE user_id = {USER_ID}"))
+    # Abecedario (abecedario_session)
+    result = db.session.execute(text(f"SELECT COUNT(*) FROM abecedario_session WHERE user_id = {USER_ID}"))
     count = result.fetchone()[0]
     print(f"Abecedario Sessions: {count}")
     

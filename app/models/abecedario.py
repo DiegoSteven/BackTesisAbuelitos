@@ -2,7 +2,7 @@ from config.database import db
 from datetime import datetime
 
 class Abecedario(db.Model):
-    __tablename__ = 'word_game_session'
+    __tablename__ = 'abecedario_session'
     
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)

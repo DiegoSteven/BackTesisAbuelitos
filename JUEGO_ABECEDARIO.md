@@ -192,7 +192,7 @@ GET /abecedario/evolution/<user_id>
 
 ## 🗄️ Modelo de Datos
 
-### Tabla: `word_game_session`
+### Tabla: `abecedario_session`
 
 | Campo | Tipo | Descripción |
 |-------|------|-------------|

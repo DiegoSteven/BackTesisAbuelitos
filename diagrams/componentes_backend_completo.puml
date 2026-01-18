@@ -1,0 +1,160 @@
+@startuml Diagrama_Componentes_Backend
+title Diagrama de Componentes - Backend Flask API Tesis Abuelitos
+
+skinparam componentStyle rectangle
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam linetype ortho
+
+' Definición de colores por capas
+skinparam component {
+    BackgroundColor<<presentation>> #E3F2FD
+    BackgroundColor<<controller>> #BBDEFB
+    BackgroundColor<<service>> #C8E6C9
+    BackgroundColor<<gemini>> #FFE0B2
+    BackgroundColor<<model>> #FFF9C4
+    BackgroundColor<<config>> #E0E0E0
+    BackgroundColor<<external>> #F8BBD0
+    BorderColor #424242
+}
+
+' ============= CAPA 1: PRESENTACIÓN =============
+package "Flask Application" <<presentation>> {
+    [app.py] as app <<presentation>>
+    [Swagger UI] as swagger <<presentation>>
+    [Admin Dashboard] as dashboard <<presentation>>
+}
+
+' ============= CAPA 2: CONTROLADORES =============
+package "Controllers Layer" <<controller>> {
+    [UserController] as userCtrl <<controller>>
+    [AbecedarioController] as abcCtrl <<controller>>
+    [PaseoController] as paseoCtrl <<controller>>
+    [MemoryGameController] as memoryCtrl <<controller>>
+    [TrainGameController] as trainCtrl <<controller>>
+    [AdminController] as adminCtrl <<controller>>
+}
+
+' ============= CAPA 3: SERVICIOS =============
+package "Services Layer" <<service>> {
+    [UserService] as userSvc <<service>>
+    [AbecedarioService] as abcSvc <<service>>
+    [PaseoService] as paseoSvc <<service>>
+    [MemoryGameService] as memorySvc <<service>>
+    [TrainGameService] as trainSvc <<service>>
+}
+
+' ============= CAPA 4: SERVICIOS IA =============
+package "Gemini AI Services" <<gemini>> {
+    [AbecedarioGeminiService] as abcGemini <<gemini>>
+    [PaseoGeminiService] as paseoGemini <<gemini>>
+    [MemoryGeminiService] as memoryGemini <<gemini>>
+    [TrainGeminiService] as trainGemini <<gemini>>
+}
+
+' ============= CAPA 5: MODELOS =============
+package "Models Layer" <<model>> {
+    [User] as userModel <<model>>
+    [Abecedario] as abcModel <<model>>
+    [PaseoSession] as paseoModel <<model>>
+    [MemoryGameSession] as memoryModel <<model>>
+    [MemoryGameConfig] as memoryConfig <<model>>
+    [TrainGameSession] as trainModel <<model>>
+    [TrainGameConfig] as trainConfig <<model>>
+}
+
+' ============= CAPA 6: CONFIGURACIÓN =============
+package "Configuration" <<config>> {
+    [database.py] as dbConfig <<config>>
+}
+
+' ============= CAPA 7: BASE DE DATOS =============
+database "PostgreSQL" as db {
+    [user] as userTable
+    [abecedario_session] as abcTable
+    [paseo_session] as paseoTable
+    [memory_game_session] as memoryTable
+    [memory_game_config] as memoryConfigTable
+    [train_game_session] as trainTable
+    [train_game_config] as trainConfigTable
+}
+
+' ============= SERVICIOS EXTERNOS =============
+cloud "Google Gemini AI" as geminiAPI <<external>>
+
+' ==========================================
+' RELACIONES CAPA 1 -> CAPA 2
+' ==========================================
+app -down-> userCtrl
+app -down-> abcCtrl
+app -down-> paseoCtrl
+app -down-> memoryCtrl
+app -down-> trainCtrl
+app -down-> adminCtrl
+app -down-> swagger
+app -down-> dashboard
+
+' ==========================================
+' RELACIONES CAPA 2 -> CAPA 3
+' ==========================================
+userCtrl -down-> userSvc
+abcCtrl -down-> abcSvc
+paseoCtrl -down-> paseoSvc
+memoryCtrl -down-> memorySvc
+trainCtrl -down-> trainSvc
+adminCtrl -down-> userSvc
+adminCtrl -down-> abcSvc
+adminCtrl -down-> paseoSvc
+adminCtrl -down-> memorySvc
+adminCtrl -down-> trainSvc
+
+' ==========================================
+' RELACIONES CAPA 3 -> CAPA 4
+' ==========================================
+abcSvc -down-> abcGemini
+paseoSvc -down-> paseoGemini
+memorySvc -down-> memoryGemini
+trainSvc -down-> trainGemini
+
+' ==========================================
+' RELACIONES CAPA 4 -> SERVICIOS EXTERNOS
+' ==========================================
+abcGemini -right-> geminiAPI
+paseoGemini -right-> geminiAPI
+memoryGemini -right-> geminiAPI
+trainGemini -right-> geminiAPI
+
+' ==========================================
+' RELACIONES CAPA 3 -> CAPA 5
+' ==========================================
+userSvc -down-> userModel
+abcSvc -down-> abcModel
+paseoSvc -down-> paseoModel
+memorySvc -down-> memoryModel
+memorySvc -down-> memoryConfig
+trainSvc -down-> trainModel
+trainSvc -down-> trainConfig
+
+' ==========================================
+' RELACIONES CAPA 5 -> CAPA 6
+' ==========================================
+userModel -down-> dbConfig
+abcModel -down-> dbConfig
+paseoModel -down-> dbConfig
+memoryModel -down-> dbConfig
+memoryConfig -down-> dbConfig
+trainModel -down-> dbConfig
+trainConfig -down-> dbConfig
+
+' ==========================================
+' RELACIONES CAPA 6 -> CAPA 7
+' ==========================================
+dbConfig -down-> userTable
+dbConfig -down-> abcTable
+dbConfig -down-> paseoTable
+dbConfig -down-> memoryTable
+dbConfig -down-> memoryConfigTable
+dbConfig -down-> trainTable
+dbConfig -down-> trainConfigTable
+
+@enduml

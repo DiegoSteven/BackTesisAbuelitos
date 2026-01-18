@@ -43,7 +43,7 @@ package "Configuration" <<config>> {
 
 database "PostgreSQL" {
     [user table] as userTable
-    [word_game_session] as sessionTable
+    [abecedario_session] as sessionTable
 }
 
 cloud "External Services" {
