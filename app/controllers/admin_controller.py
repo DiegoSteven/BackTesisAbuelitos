@@ -236,59 +236,7 @@ class AdminController:
                 'error': str(e)
             }), 500
     
-    @staticmethod
-    def get_user_stats_all_games(user_id):
-        """
-        GET /admin/user-stats/<user_id>
-        Obtiene estadísticas de todos los juegos para un usuario específico
-        """
-        try:
-            # Obtener usuario
-            user = User.query.get(user_id)
-            if not user:
-                return jsonify({
-                    'success': False,
-                    'error': 'Usuario no encontrado'
-                }), 404
-            
-            # Stats de Memoria
-            memory_sessions = MemoryGameSession.query.filter_by(user_id=user_id).all()
-            memory_stats = {
-                'total_sesiones': len(memory_sessions),
-                'promedio_accuracy': sum([s.accuracy_percentage or 0 for s in memory_sessions]) / len(memory_sessions) if memory_sessions else 0,
-                'sesiones_completadas': sum([1 for s in memory_sessions if s.completion_status == 'completed'])
-            }
-            
-            # Stats de Abecedario  
-            abecedario_sessions = Abecedario.query.filter_by(user_id=user_id).all()
-            abecedario_stats = {
-                'total_sesiones': len(abecedario_sessions),
-                'palabras_completadas': sum([1 for s in abecedario_sessions if s.completado]),
-                'tiempo_promedio': sum([s.tiempo_resolucion for s in abecedario_sessions]) / len(abecedario_sessions) if abecedario_sessions else 0
-            }
-            
-            # Stats de Paseo
-            paseo_sessions = PaseoSession.query.filter_by(user_id=user_id).all()
-            paseo_stats = {
-                'total_sesiones': len(paseo_sessions),
-                'victorias': sum([1 for s in paseo_sessions if s.resultado == 'victoria']),
-                'precision_promedio': sum([s.precision or 0 for s in paseo_sessions]) / len(paseo_sessions) if paseo_sessions else 0
-            }
-            
-            return jsonify({
-                'success': True,
-                'user': user.to_dict(),
-                'stats': {
-                    'memoria': memory_stats,
-                    'abecedario': abecedario_stats,
-                    'paseo': paseo_stats
-                }
-            }), 200
-        except Exception as e:
-            return jsonify({
-                'success': False,
-                'error': str(e)
-            }), 500
+
     
     @staticmethod
     def get_user_memory_sessions(user_id):
@@ -360,26 +308,111 @@ class AdminController:
         Obtiene estadísticas globales del sistema
         """
         try:
-            # Total de sesiones
-            total_sessions = MemoryGameSession.query.count()
+            # Total de sesiones por juego
+            memory_count = MemoryGameSession.query.count()
+            abecedario_count = Abecedario.query.count()
+            paseo_count = PaseoSession.query.count()
+            train_count = TrainGameSession.query.count()
             
-            # Sesiones de hoy
+            total_sessions = memory_count + abecedario_count + paseo_count + train_count
+            
+            # Total de usuarios
+            total_users = User.query.count()
+
+            # Sesiones de hoy (Global)
             today = datetime.utcnow().date()
-            sessions_today = MemoryGameSession.query.filter(
-                func.date(MemoryGameSession.finished_at) == today
+            
+            # Helper to count today's sessions for a model with a specific date field
+            def count_today(model, date_field):
+                return model.query.filter(func.date(date_field) == today).count()
+
+            sessions_today = (
+                count_today(MemoryGameSession, MemoryGameSession.finished_at) +
+                count_today(Abecedario, Abecedario.created_at) +
+                count_today(PaseoSession, PaseoSession.created_at) +
+                count_today(TrainGameSession, TrainGameSession.finished_at)
+            )
+
+            # Activity last 7 days
+            last_7_days = []
+            for i in range(7):
+                day = today - timedelta(days=i)
+                day_str = day.strftime('%Y-%m-%d')
+                
+                def count_day(model, date_field):
+                    return model.query.filter(func.date(date_field) == day).count()
+                
+                count = (
+                    count_day(MemoryGameSession, MemoryGameSession.finished_at) +
+                    count_day(Abecedario, Abecedario.created_at) +
+                    count_day(PaseoSession, PaseoSession.created_at) +
+                    count_day(TrainGameSession, TrainGameSession.finished_at)
+                )
+                last_7_days.append({'date': day_str, 'count': count})
+            
+            last_7_days.reverse() # Chronological order
+            
+            # AI Metrics
+            ai_memory_adjustments = MemoryGameSession.query.filter(
+                MemoryGameSession.ai_adjustment_decision.isnot(None)
             ).count()
             
-            # Accuracy promedio
-            avg_accuracy = MemoryGameSession.query.\
-                filter(MemoryGameSession.accuracy_percentage != None).\
-                with_entities(func.avg(MemoryGameSession.accuracy_percentage)).\
-                scalar()
+            ai_abecedario_changes = Abecedario.query.filter(
+                Abecedario.cambio_nivel == True
+            ).count()
             
+            ai_paseo_recommendations = PaseoSession.query.filter(
+                PaseoSession.recomendacion_siguiente.isnot(None)
+            ).count()
+            
+            total_ai_actions = ai_memory_adjustments + ai_abecedario_changes + ai_paseo_recommendations
+
             return jsonify({
                 'success': True,
                 'total_sessions': total_sessions,
                 'sessions_today': sessions_today,
-                'average_accuracy': float(avg_accuracy) if avg_accuracy else 0
+                'total_users': total_users,
+                'game_distribution': {
+                    'memoria': memory_count,
+                    'abecedario': abecedario_count,
+                    'paseo': paseo_count,
+                    'trenes': train_count
+                },
+                'activity_history': last_7_days,
+                'ai_metrics': {
+                    'total_actions': total_ai_actions,
+                    'memory_adjustments': ai_memory_adjustments,
+                    'abecedario_level_changes': ai_abecedario_changes,
+                    'paseo_recommendations': ai_paseo_recommendations
+                }
+            }), 200
+        except Exception as e:
+            return jsonify({
+                'success': False,
+                'error': str(e)
+            }), 500
+    @staticmethod
+    def get_train_configs():
+        """
+        GET /admin/train-configs
+        Obtiene todas las configuraciones actuales de usuarios para Train Game
+        """
+        try:
+            from models.train_game import TrainGameConfig
+            configs = db.session.query(TrainGameConfig, User.nombre).\
+                join(User, TrainGameConfig.user_id == User.id).\
+                all()
+            
+            result = []
+            for config, user_name in configs:
+                config_dict = config.to_dict()
+                config_dict['user_id'] = config.user_id
+                config_dict['user_name'] = user_name
+                result.append(config_dict)
+            
+            return jsonify({
+                'success': True,
+                'configs': result
             }), 200
         except Exception as e:
             return jsonify({

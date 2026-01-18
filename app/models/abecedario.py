@@ -37,6 +37,8 @@ class Abecedario(db.Model):
             'cantidad_errores': self.cantidad_errores,
             'pistas_usadas': self.pistas_usadas,
             'completado': self.completado,
+            'nivel_jugado': self.nivel_jugado,
+            'cambio_nivel': self.cambio_nivel,
             'created_at': self.created_at.isoformat(),
             'fecha_juego': self.fecha_juego.isoformat()
         }

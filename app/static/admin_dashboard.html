@@ -5,9 +5,514 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cognitive Games Dashboard</title>
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="/static/admin_dashboard.css">
+    <style>
+        :root {
+            --bg-dark: #0f1015;
+            --bg-card: #1b1e2b;
+            --bg-sidebar: #151722;
+            --text-primary: #ffffff;
+            --text-secondary: #8b92a9;
+            --accent-purple: #bb86fc;
+            --accent-pink: #ff79c6;
+            --accent-cyan: #03dac6;
+            --accent-blue: #3d5afe;
+            --gradient-1: linear-gradient(135deg, #da59ff 0%, #7d4dff 100%);
+            --gradient-2: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
+            --gradient-3: linear-gradient(135deg, #ff512f 0%, #dd2476 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background-color: var(--bg-sidebar);
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .logo {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 50px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-primary);
+        }
+
+        .logo span {
+            color: var(--accent-purple);
+        }
+
+        .nav-item {
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            border-radius: 12px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: rgba(187, 134, 252, 0.1);
+            color: var(--accent-purple);
+        }
+
+        .nav-item.active {
+            border-left: 3px solid var(--accent-purple);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 260px;
+            padding: 40px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        .refresh-btn {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.3s;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+        }
+
+        .refresh-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 25px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .stat-card.gradient-1 {
+            background: var(--gradient-1);
+        }
+
+        .stat-card.gradient-2 {
+            background: var(--gradient-2);
+        }
+
+        .stat-card.gradient-3 {
+            background: var(--gradient-3);
+        }
+
+        .stat-card h3 {
+            font-size: 14px;
+            opacity: 0.8;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        .stat-card .value {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .stat-card .trend {
+            font-size: 12px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 10px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+
+        /* Charts Section */
+        .charts-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .chart-container {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .chart-header h3 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        /* Tables */
+        .table-container {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 25px;
+            overflow-x: auto;
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th {
+            text-align: left;
+            color: var(--text-secondary);
+            font-weight: 500;
+            padding: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Badges */
+        .badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-success {
+            background: rgba(3, 218, 198, 0.15);
+            color: var(--accent-cyan);
+        }
+
+        .badge-warning {
+            background: rgba(255, 121, 198, 0.15);
+            color: var(--accent-pink);
+        }
+
+        .badge-info {
+            background: rgba(61, 90, 254, 0.15);
+            color: var(--accent-blue);
+        }
+
+        .badge-danger {
+            background: rgba(255, 82, 82, 0.15);
+            color: #ff5252;
+        }
+
+        /* Tabs Content */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+    /* Agregar estos estilos CSS adicionales al dashboard */
+
+/* Select/Dropdown personalizado */
+.custom-select {
+    width: 100%;
+    max-width: 400px;
+    padding: 15px 20px;
+    background: var(--bg-card);
+    border: 2px solid rgba(187, 134, 252, 0.3);
+    border-radius: 12px;
+    color: var(--text-primary);
+    font-size: 16px;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 30px;
+}
+
+.custom-select:hover {
+    border-color: var(--accent-purple);
+}
+
+.custom-select:focus {
+    outline: none;
+    border-color: var(--accent-purple);
+    box-shadow: 0 0 0 3px rgba(187, 134, 252, 0.1);
+}
+
+.custom-select option {
+    background: var(--bg-card);
+    color: var(--text-primary);
+}
+
+/* Game Cards */
+.game-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 25px;
+    margin: 30px 0;
+}
+
+.game-card {
+    background: linear-gradient(135deg, rgba(187, 134, 252, 0.1) 0%, rgba(61, 90, 254, 0.1) 100%);
+    border: 2px solid rgba(187, 134, 252, 0.2);
+    border-radius: 20px;
+    padding: 30px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.game-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--accent-purple);
+    box-shadow: 0 10px 30px rgba(187, 134, 252, 0.3);
+}
+
+.game-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 5px;
+    background: var(--accent-purple);
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+}
+
+.game-card:hover::before {
+    transform: scaleX(1);
+}
+
+.game-card.memoria {
+    border-color: rgba(3, 218, 198, 0.3);
+}
+
+.game-card.memoria:hover {
+    border-color: var(--accent-cyan);
+    box-shadow: 0 10px 30px rgba(3, 218, 198, 0.3);
+}
+
+.game-card.memoria::before {
+    background: var(--accent-cyan);
+}
+
+.game-card.abecedario {
+    border-color: rgba(255, 121, 198, 0.3);
+}
+
+.game-card.abecedario:hover {
+    border-color: var(--accent-pink);
+    box-shadow: 0 10px 30px rgba(255, 121, 198, 0.3);
+}
+
+.game-card.abecedario::before {
+    background: var(--accent-pink);
+}
+
+.game-card.paseo {
+    border-color: rgba(61, 90, 254, 0.3);
+}
+
+.game-card.paseo:hover {
+    border-color: var(--accent-blue);
+    box-shadow: 0 10px 30px rgba(61, 90, 254, 0.3);
+}
+
+.game-card.paseo::before {
+    background: var(--accent-blue);
+}
+
+.game-card-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+}
+
+.game-card-title {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 15px;
+    color: var(--text-primary);
+}
+
+.game-card-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.game-card-stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+}
+
+.game-card-stat-label {
+    color: var(--text-secondary);
+}
+
+.game-card-stat-value {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 16px;
+}
+
+/* Detailed view */
+.detailed-view {
+    margin-top: 40px;
+    display: none;
+}
+
+.detailed-view.active {
+    display: block;
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.detailed-view-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.detailed-view-title {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--accent-purple);
+}
+
+.back-btn {
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.3s;
+    font-family: 'Inter', sans-serif;
+}
+
+.back-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--accent-purple);
+}
+
+/* Empty state */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-secondary);
+}
+
+.empty-state-icon {
+    font-size: 64px;
+    opacity: 0.5;
+    margin-bottom: 20px;
+}
+
+.empty-state-text {
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+
+.empty-state-subtext {
+    font-size: 14px;
+    opacity: 0.7;
+}
+
+    </style>
 </head>
 
 <body>
@@ -16,12 +521,21 @@
         <div class="logo">
             <span>⚡</span> Abuelitos Admin
         </div>
-        <div class="nav-item active" onclick="switchTab('general')">📊 General</div>
-        <div class="nav-item" onclick="switchTab('memory')">🧠 Memory Game</div>
-        <div class="nav-item" onclick="switchTab('abecedario')">🔤 Abecedario</div>
-        <div class="nav-item" onclick="switchTab('paseo')">🚶 Paseo</div>
-        <div class="nav-item" onclick="switchTab('train')">🚂 Trenes</div>
-        <div class="nav-item" onclick="switchTab('usuarios')">👥 Por Usuario</div>
+        <div class="nav-item active" onclick="switchTab('general')">
+            📊 General
+        </div>
+        <div class="nav-item" onclick="switchTab('memory')">
+            🧠 Memory Game
+        </div>
+        <div class="nav-item" onclick="switchTab('abecedario')">
+            🔤 Abecedario
+        </div>
+        <div class="nav-item" onclick="switchTab('paseo')">
+            🚶 Paseo
+        </div>
+        <div class="nav-item" onclick="switchTab('usuarios')">
+            👥 Por Usuario
+        </div>
     </div>
 
     <!-- Main Content -->
@@ -94,7 +608,13 @@
                     <div class="value" id="memAvgAccuracy">-%</div>
                     <span class="trend">🎯 Precisión Global</span>
                 </div>
+                <div class="stat-card" style="background: #2d3446;">
+                    <h3>Nivel Más Común</h3>
+                    <div class="value" style="color: var(--accent-cyan);">Medium</div>
+                    <span class="trend">📊 Dificultad</span>
+                </div>
             </div>
+
             <div class="table-container">
                 <h3>🧠 Últimas Sesiones (Memory Game)</h3>
                 <table id="memoryTable">
@@ -116,6 +636,7 @@
                     </tbody>
                 </table>
             </div>
+
             <div class="table-container">
                 <h3>⚙️ Configuraciones Actuales</h3>
                 <table id="configTable">
@@ -145,6 +666,7 @@
                     <span class="trend">🔤 Total</span>
                 </div>
             </div>
+
             <div class="table-container">
                 <h3>🔤 Últimas Sesiones (Abecedario)</h3>
                 <table id="abecedarioTable">
@@ -187,6 +709,7 @@
                     <span class="trend">🎯 Precisión</span>
                 </div>
             </div>
+
             <div class="table-container">
                 <h3>🚶 Últimas Sesiones (Paseo)</h3>
                 <table id="paseoTable">
@@ -210,226 +733,491 @@
             </div>
         </div>
 
-        <!-- TAB: TRENES -->
-        <div id="tab-train" class="tab-content">
-            <div class="stats-grid">
-                <div class="stat-card gradient-1">
-                    <h3>Total Sesiones</h3>
-                    <div class="value" id="trainTotal">-</div>
-                    <span class="trend">🚂 Trenes</span>
-                </div>
-                <div class="stat-card gradient-2">
-                    <h3>Precisión Promedio</h3>
-                    <div class="value" id="trainAccuracy">-%</div>
-                    <span class="trend">🎯 Global</span>
-                </div>
-            </div>
+        <!-- TAB: POR USUARIO -->
+        <div id="tab-usuarios" class="tab-content">
             <div class="table-container">
-                <h3>🚂 Últimas Sesiones (Trenes)</h3>
-                <table id="trainTable">
+                <h3>👥 Seleccionar Usuario</h3>
+                <table id="usersSelectTable">
                     <thead>
                         <tr>
                             <th>ID</th>
-                            <th>Usuario</th>
-                            <th>Velocidad</th>
-                            <th>Colores</th>
-                            <th>Aciertos</th>
-                            <th>Errores</th>
-                            <th>Fecha</th>
+                            <th>Nombre</th>
+                            <th>Edad</th>
+                            <th>Género</th>
+                            <th>Acción</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td colspan="7" class="loading">Cargando...</td>
+                            <td colspan="5" class="loading">Cargando...</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
-        </div>
 
-        <!-- TAB: POR USUARIO -->
-        <div id="tab-usuarios" class="tab-content">
-            <div style="margin-bottom: 30px;">
-                <label for="userSelect" style="display: block; margin-bottom: 10px; color: var(--text-secondary);">👤
-                    Seleccionar Usuario:</label>
-                <select id="userSelect" class="custom-select" onchange="onUserSelected()">
-                    <option value="">-- Seleccione un usuario --</option>
-                </select>
-            </div>
+            <div id="userStatsContainer" style="display: none;">
+                <h3 id="selectedUserName" style="color: var(--accent-purple); margin: 30px 0 20px 0;"></h3>
 
-            <div id="emptyState" class="empty-state">
-                <div class="empty-state-icon">👆</div>
-                <div class="empty-state-text">Selecciona un usuario</div>
-                <div class="empty-state-subtext">Elige un usuario del menú para ver sus estadísticas</div>
-            </div>
-
-            <div id="gameCardsContainer" style="display: none;">
-                <h3 id="selectedUserTitle" style="color: var(--accent-purple); margin-bottom: 20px;"></h3>
-
-                <div class="game-cards">
-                    <div class="game-card" onclick="showGameDetails('memoria')">
-                        <div class="game-card-icon">🧠</div>
-                        <div class="game-card-title">Juego de Memoria</div>
-                        <div class="game-card-stats">
-                            <div class="game-card-stat"><span class="game-card-stat-label">Total Sesiones:</span><span
-                                    class="game-card-stat-value" id="memoriaTotalSessions">-</span></div>
-                            <div class="game-card-stat"><span class="game-card-stat-label">Accuracy:</span><span
-                                    class="game-card-stat-value" id="memoriaAccuracy">-%</span></div>
-                            <div class="game-card-stat"><span class="game-card-stat-label">Completadas:</span><span
-                                    class="game-card-stat-value" id="memoriaCompleted">-</span></div>
+                <div class="stats-grid">
+                    <div class="stat-card" style="background: #2d3446;">
+                        <h3>🧠 Memoria</h3>
+                        <div class="value" id="userMemoryTotal" style="font-size: 24px; color: var(--accent-cyan);">-
                         </div>
+                        <span class="trend" id="userMemoryAccuracy">Accuracy: -</span>
                     </div>
-                    <div class="game-card" onclick="showGameDetails('abecedario')">
-                        <div class="game-card-icon">🔤</div>
-                        <div class="game-card-title">Abecedario</div>
-                        <div class="game-card-stats">
-                            <div class="game-card-stat"><span class="game-card-stat-label">Total Sesiones:</span><span
-                                    class="game-card-stat-value" id="abecedarioTotalSessions">-</span></div>
-                            <div class="game-card-stat"><span class="game-card-stat-label">Completadas:</span><span
-                                    class="game-card-stat-value" id="abecedarioCompleted">-</span></div>
-                            <div class="game-card-stat"><span class="game-card-stat-label">Tiempo Promedio:</span><span
-                                    class="game-card-stat-value" id="abecedarioAvgTime">-s</span></div>
+                    <div class="stat-card" style="background: #2d3446;">
+                        <h3>🔤 Abecedario</h3>
+                        <div class="value" id="userAbcTotal" style="font-size: 24px; color: var(--accent-pink);">-</div>
+                        <span class="trend" id="userAbcCompletadas">Completadas: -</span>
+                    </div>
+                    <div class="stat-card" style="background: #2d3446;">
+                        <h3>🚶 Paseo</h3>
+                        <div class="value" id="userPaseoTotal" style="font-size: 24px; color: var(--accent-purple);">-
                         </div>
+                        <span class="trend" id="userPaseoVictorias">Victorias: -</span>
                     </div>
-                    <div class="game-card" onclick="showGameDetails('paseo')">
-                        <div class="game-card-icon">🚶</div>
-                        <div class="game-card-title">Paseo</div>
-                        <div class="game-card-stats">
-                            <div class="game-card-stat"><span class="game-card-stat-label">Total Sesiones:</span><span
-                                    class="game-card-stat-value" id="paseoTotalSessions">-</span></div>
-                            <div class="game-card-stat"><span class="game-card-stat-label">Victorias:</span><span
-                                    class="game-card-stat-value" id="paseoVictoriasStats">-</span></div>
-                            <div class="game-card-stat"><span class="game-card-stat-label">Precisión:</span><span
-                                    class="game-card-stat-value" id="paseoPrecisionStats">-%</span></div>
-                        </div>
-                    </div>
-                    <div class="game-card" onclick="showGameDetails('train')">
-                        <div class="game-card-icon">🚂</div>
-                        <div class="game-card-title">Trenes</div>
-                        <div class="game-card-stats">
-                            <div class="game-card-stat"><span class="game-card-stat-label">Total Sesiones:</span><span
-                                    class="game-card-stat-value" id="trainTotalSessions">-</span></div>
-                            <div class="game-card-stat"><span class="game-card-stat-label">Aciertos:</span><span
-                                    class="game-card-stat-value" id="trainTotalCorrect">-</span></div>
-                            <div class="game-card-stat"><span class="game-card-stat-label">Precisión:</span><span
-                                    class="game-card-stat-value" id="trainPrecisionStats">-%</span></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Detailed Views -->
-            <div id="detailedMemoria" class="detailed-view">
-                <div class="detailed-view-header">
-                    <h3 class="detailed-view-title">🧠 Sesiones de Memoria</h3>
-                    <button class="back-btn" onclick="hideGameDetails()">← Volver</button>
-                </div>
-                <div class="table-container">
-                    <table id="memoriaDetailTable">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Fecha</th>
-                                <th>Dificultad</th>
-                                <th>Pares</th>
-                                <th>Accuracy</th>
-                                <th>Tiempo</th>
-                                <th>Estado</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td colspan="7" class="loading">Cargando...</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div id="detailedAbecedario" class="detailed-view">
-                <div class="detailed-view-header">
-                    <h3 class="detailed-view-title">🔤 Sesiones de Abecedario</h3>
-                    <button class="back-btn" onclick="hideGameDetails()">← Volver</button>
-                </div>
-                <div class="table-container">
-                    <table id="abecedarioDetailTable">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Fecha</th>
-                                <th>Palabra</th>
-                                <th>Tiempo</th>
-                                <th>Errores</th>
-                                <th>Pistas</th>
-                                <th>Estado</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td colspan="7" class="loading">Cargando...</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div id="detailedPaseo" class="detailed-view">
-                <div class="detailed-view-header">
-                    <h3 class="detailed-view-title">🚶 Sesiones de Paseo</h3>
-                    <button class="back-btn" onclick="hideGameDetails()">← Volver</button>
-                </div>
-                <div class="table-container">
-                    <table id="paseoDetailTable">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Fecha</th>
-                                <th>Nivel</th>
-                                <th>Aciertos</th>
-                                <th>Meta</th>
-                                <th>Precisión</th>
-                                <th>Resultado</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td colspan="7" class="loading">Cargando...</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div id="detailedTrain" class="detailed-view">
-                <div class="detailed-view-header">
-                    <h3 class="detailed-view-title">🚂 Sesiones de Trenes</h3>
-                    <button class="back-btn" onclick="hideGameDetails()">← Volver</button>
-                </div>
-                <div class="table-container">
-                    <table id="trainDetailTable">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Fecha</th>
-                                <th>Velocidad</th>
-                                <th>Colores</th>
-                                <th>Aciertos</th>
-                                <th>Errores</th>
-                                <th>Estado</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td colspan="7" class="loading">Cargando...</td>
-                            </tr>
-                        </tbody>
-                    </table>
                 </div>
             </div>
         </div>
     </div>
 
-    <script src="/static/admin_dashboard.js"></script>
+    <script>
+        const API_BASE = 'http://localhost:5000';
+        let charts = {};
+
+        // Navigation
+        function switchTab(tabName) {
+            // Update nav items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+                if (item.textContent.toLowerCase().includes(tabName)) {
+                    item.classList.add('active');
+                }
+            });
+
+            // Update content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+
+            // Update Title
+            const titles = {
+                'general': 'Dashboard General',
+                'memory': 'Memory Game Stats',
+                'abecedario': 'Abecedario Stats',
+                'paseo': 'Paseo Stats',
+                'usuarios': 'Estadísticas por Usuario'
+            };
+            document.getElementById('pageTitle').textContent = titles[tabName];
+        }
+
+        // Data Loading
+        async function fetchAPI(endpoint) {
+            try {
+                const response = await fetch(`${API_BASE}${endpoint}`);
+                return await response.json();
+            } catch (error) {
+                console.error(`Error fetching ${endpoint}:`, error);
+                return null;
+            }
+        }
+
+        async function loadAllData() {
+            await Promise.all([
+                loadGeneralStats(),
+                loadMemoryData(),
+                loadAbecedarioData(),
+                loadPaseoData(),
+                loadUsersDropdown()
+            ]);
+            initCharts();
+        }
+
+        async function loadGeneralStats() {
+            // Users
+            const usersData = await fetchAPI('/users');
+            if (usersData && usersData.users) {
+                document.getElementById('totalUsers').textContent = usersData.users.length;
+
+                const tbody = document.querySelector('#usersTable tbody');
+                tbody.innerHTML = usersData.users.slice(0, 5).map(u => `
+                    <tr>
+                        <td>#${u.id}</td>
+                        <td>${u.nombre}</td>
+                        <td>${u.edad}</td>
+                        <td>${u.genero}</td>
+                    </tr>
+                `).join('');
+            }
+
+            // Global Stats
+            const statsData = await fetchAPI('/admin/stats');
+            if (statsData) {
+                document.getElementById('totalGames').textContent = statsData.total_sessions || 0;
+                document.getElementById('gamesToday').textContent = statsData.sessions_today || 0;
+                document.getElementById('memAvgAccuracy').textContent =
+                    (statsData.average_accuracy ? statsData.average_accuracy.toFixed(1) : 0) + '%';
+            }
+        }
+
+        async function loadMemoryData() {
+            // Sessions
+            const sessionsData = await fetchAPI('/admin/memory-sessions');
+            if (sessionsData && sessionsData.sessions) {
+                const tbody = document.querySelector('#memoryTable tbody');
+                tbody.innerHTML = sessionsData.sessions.map(s => `
+                    <tr>
+                        <td>#${s.session_id}</td>
+                        <td>User ${s.user_id}</td>
+                        <td><span class="badge badge-info">${s.difficulty_level}</span></td>
+                        <td>${s.pairs_found}/${s.total_pairs}</td>
+                        <td>${s.accuracy ? s.accuracy.toFixed(1) : 0}%</td>
+                        <td>${s.elapsed_time ? s.elapsed_time.toFixed(1) : 0}s</td>
+                        <td><span class="badge ${s.completion_status === 'completed' ? 'badge-success' : 'badge-danger'}">${s.completion_status}</span></td>
+                    </tr>
+                `).join('');
+            }
+
+            // Configs
+            const configsData = await fetchAPI('/admin/memory-configs');
+            if (configsData && configsData.configs) {
+                const tbody = document.querySelector('#configTable tbody');
+                tbody.innerHTML = configsData.configs.map(c => `
+                    <tr>
+                        <td>User ${c.user_id}</td>
+                        <td><span class="badge badge-warning">${c.difficulty_label}</span></td>
+                        <td>${c.grid_size}</td>
+                        <td>${c.time_limit}s</td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        async function loadAbecedarioData() {
+            const data = await fetchAPI('/admin/abecedario-sessions');
+            if (data && data.sessions) {
+                document.getElementById('abcCompleted').textContent = data.sessions.length;
+
+                const tbody = document.querySelector('#abecedarioTable tbody');
+                tbody.innerHTML = data.sessions.map(s => `
+                    <tr>
+                        <td>#${s.id}</td>
+                        <td>User ${s.user_id}</td>
+                        <td style="color: var(--accent-cyan); font-weight: bold;">${s.palabra_objetivo}</td>
+                        <td>${s.tiempo_resolucion}s</td>
+                        <td>${s.cantidad_errores}</td>
+                        <td>${s.pistas_usadas}</td>
+                        <td><span class="badge ${s.completado ? 'badge-success' : 'badge-danger'}">${s.completado ? 'Completado' : 'Incompleto'}</span></td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        async function loadPaseoData() {
+            const data = await fetchAPI('/admin/paseo-sessions');
+            if (data && data.sessions) {
+                // Calcular stats
+                const victorias = data.sessions.filter(s => s.resultado === 'victoria').length;
+                const precisionPromedio = data.sessions.reduce((sum, s) => sum + (s.precision || 0), 0) / data.sessions.length;
+
+                document.getElementById('paseoTotal').textContent = data.sessions.length;
+                document.getElementById('paseoVictorias').textContent = victorias;
+                document.getElementById('paseoPrecision').textContent = precisionPromedio.toFixed(1) + '%';
+
+                const tbody = document.querySelector('#paseoTable tbody');
+                tbody.innerHTML = data.sessions.map(s => `
+                    <tr>
+                        <td>#${s.id}</td>
+                        <td>User ${s.user_id}</td>
+                        <td><span class="badge badge-info">${s.nivel_dificultad}</span></td>
+                        <td>${s.esferas_rojas_atrapadas}</td>
+                        <td>${s.meta_aciertos}</td>
+                        <td>${(s.precision || 0).toFixed(1)}%</td>
+                        <td><span class="badge ${s.resultado === 'victoria' ? 'badge-success' : 'badge-danger'}">${s.resultado}</span></td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        // JavaScript para la funcionalidad de "Por Usuario" mejorada
+
+let currentUserId = null;
+let currentUserName = null;
+
+// Cargar usuarios en el dropdown
+async function loadUsersDropdown() {
+    const usersData = await fetchAPI('/users');
+    if (usersData && usersData.users) {
+        const select = document.getElementById('userSelect');
+        select.innerHTML = '<option value="">-- Seleccione un usuario --</option>';
+
+        usersData.users.forEach(user => {
+            const option = document.createElement('option');
+            option.value = user.id;
+            option.textContent = `${user.nombre} (${user.edad} años, ${user.genero})`;
+            select.appendChild(option);
+        });
+    }
+}
+
+// Cuando se selecciona un usuario
+async function onUserSelected() {
+    const select = document.getElementById('userSelect');
+    const userId = select.value;
+
+    if (!userId) {
+        // Mostrar empty state
+        document.getElementById('emptyState').style.display = 'block';
+        document.getElementById('gameCardsContainer').style.display = 'none';
+        hideAllDetails();
+        return;
+    }
+
+    // Guardar usuario actual
+    currentUserId = userId;
+    const selectedOption = select.options[select.selectedIndex];
+    currentUserName = selectedOption.textContent.split(' (')[0];
+
+    // Ocultar empty state y mostrar contenido
+    document.getElementById('emptyState').style.display = 'none';
+    document.getElementById('gameCardsContainer').style.display = 'block';
+
+    // Actualizar título
+    document.getElementById('selectedUserTitle').textContent = `📊 Estadísticas de ${currentUserName}`;
+
+    // Cargar estadísticas
+    await loadUserGameStats(userId);
+
+    // Ocultar vistas detalladas
+    hideAllDetails();
+}
+
+// Cargar estadísticas de todos los juegos para un usuario
+async function loadUserGameStats(userId) {
+    const data = await fetchAPI(`/admin/user-stats/${userId}`);
+    if (data && data.success) {
+        // Memoria
+        document.getElementById('memoriaTotalSessions').textContent = data.stats.memoria.total_sesiones;
+        document.getElementById('memoriaAccuracy').textContent = data.stats.memoria.promedio_accuracy.toFixed(1) + '%';
+        document.getElementById('memoriaCompleted').textContent = data.stats.memoria.sesiones_completadas;
+
+        // Abecedario
+        document.getElementById('abecedarioTotalSessions').textContent = data.stats.abecedario.total_sesiones;
+        document.getElementById('abecedarioCompleted').textContent = data.stats.abecedario.palabras_completadas;
+        document.getElementById('abecedarioAvgTime').textContent = data.stats.abecedario.tiempo_promedio.toFixed(1) + 's';
+
+        // Paseo
+        document.getElementById('paseoTotalSessions').textContent = data.stats.paseo.total_sesiones;
+        document.getElementById('paseoVictorias').textContent = data.stats.paseo.victorias;
+        document.getElementById('paseoPrecisionUser').textContent = data.stats.paseo.precision_promedio.toFixed(1) + '%';
+    }
+}
+
+// Mostrar detalles de un juego específico
+async function showGameDetails(gameName) {
+    if (!currentUserId) return;
+
+    // Ocultar cards y otros detalles
+    document.getElementById('gameCardsContainer').querySelector('.game-cards').style.display = 'none';
+    hideAllDetails();
+
+    // Mostrar la vista detallada correspondiente
+    const detailView = document.getElementById(`detailed${capitalize(gameName)}`);
+    detailView.classList.add('active');
+    detailView.style.display = 'block';
+
+    // Cargar datos específicos
+    if (gameName === 'memoria') {
+        await loadMemoriaDetails(currentUserId);
+    } else if (gameName === 'abecedario') {
+        await loadAbecedarioDetails(currentUserId);
+    } else if (gameName === 'paseo') {
+        await loadPaseoDetails(currentUserId);
+    }
+}
+
+// Ocultar vista detallada y volver a los cards
+function hideGameDetails() {
+    hideAllDetails();
+    document.getElementById('gameCardsContainer').querySelector('.game-cards').style.display = 'grid';
+}
+
+// Ocultar todas las vistas detalladas
+function hideAllDetails() {
+    document.querySelectorAll('.detailed-view').forEach(view => {
+        view.classList.remove('active');
+        view.style.display = 'none';
+    });
+}
+
+// Cargar detalles de Memoria
+async function loadMemoriaDetails(userId) {
+    const data = await fetchAPI(`/admin/user-memory-sessions/${userId}`);
+    if (data && data.sessions) {
+        const tbody = document.querySelector('#memoriaDetailTable tbody');
+
+        if (data.sessions.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px; color: var(--text-secondary);">No hay sesiones registradas</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = data.sessions.map(s => `
+            <tr>
+                <td>#${s.session_id}</td>
+                <td>${formatDate(s.finished_at || s.started_at)}</td>
+                <td><span class="badge badge-info">${s.difficulty_level}</span></td>
+                <td>${s.pairs_found}/${s.total_pairs}</td>
+                <td>${(s.accuracy || 0).toFixed(1)}%</td>
+                <td>${(s.elapsed_time || 0).toFixed(1)}s</td>
+                <td><span class="badge ${s.completion_status === 'completed' ? 'badge-success' : 'badge-danger'}">${s.completion_status}</span></td>
+            </tr>
+        `).join('');
+    }
+}
+
+// Cargar detalles de Abecedario
+async function loadAbecedarioDetails(userId) {
+    const data = await fetchAPI(`/admin/user-abecedario-sessions/${userId}`);
+    if (data && data.sessions) {
+        const tbody = document.querySelector('#abecedarioDetailTable tbody');
+
+        if (data.sessions.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px; color: var(--text-secondary);">No hay sesiones registradas</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = data.sessions.map(s => `
+            <tr>
+                <td>#${s.id}</td>
+                <td>${formatDate(s.created_at)}</td>
+                <td style="color: var(--accent-cyan); font-weight: bold;">${s.palabra_objetivo}</td>
+                <td>${s.tiempo_resolucion.toFixed(1)}s</td>
+                <td>${s.cantidad_errores}</td>
+                <td>${s.pistas_usadas}</td>
+                <td><span class="badge ${s.completado ? 'badge-success' : 'badge-danger'}">${s.completado ? 'Completado' : 'Incompleto'}</span></td>
+            </tr>
+        `).join('');
+    }
+}
+
+// Cargar detalles de Paseo
+async function loadPaseoDetails(userId) {
+    const data = await fetchAPI(`/admin/user-paseo-sessions/${userId}`);
+    if (data && data.sessions) {
+        const tbody = document.querySelector('#paseoDetailTable tbody');
+
+        if (data.sessions.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px; color: var(--text-secondary);">No hay sesiones registradas</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = data.sessions.map(s => `
+            <tr>
+                <td>#${s.id}</td>
+                <td>${formatDate(s.created_at)}</td>
+                <td><span class="badge badge-info">${s.nivel_dificultad}</span></td>
+                <td>${s.esferas_rojas_atrapadas}</td>
+                <td>${s.meta_aciertos}</td>
+                <td>${(s.precision || 0).toFixed(1)}%</td>
+                <td><span class="badge ${s.resultado === 'victoria' ? 'badge-success' : 'badge-danger'}">${s.resultado}</span></td>
+            </tr>
+        `).join('');
+    }
+}
+
+// Utilidades
+function capitalize(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+function formatDate(dateString) {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-ES', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+
+
+        async function loadUserStats(userId, userName) {
+            const data = await fetchAPI(`/admin/user-stats/${userId}`);
+            if (data && data.success) {
+                document.getElementById('selectedUserName').textContent = `📊 Estadísticas de ${userName}`;
+                document.getElementById('userStatsContainer').style.display = 'block';
+
+                // Memoria
+                document.getElementById('userMemoryTotal').textContent = data.stats.memoria.total_sesiones + ' sesiones';
+                document.getElementById('userMemoryAccuracy').textContent = `Accuracy: ${data.stats.memoria.promedio_accuracy.toFixed(1)}%`;
+
+                // Abecedario
+                document.getElementById('userAbcTotal').textContent = data.stats.abecedario.total_sesiones + ' sesiones';
+                document.getElementById('userAbcCompletadas').textContent = `Completadas: ${data.stats.abecedario.palabras_completadas}`;
+
+                // Paseo
+                document.getElementById('userPaseoTotal').textContent = data.stats.paseo.total_sesiones + ' sesiones';
+                document.getElementById('userPaseoVictorias').textContent = `Victorias: ${data.stats.paseo.victorias}`;
+            }
+        }
+
+        function initCharts() {
+            // Activity Chart
+            const ctxActivity = document.getElementById('activityChart').getContext('2d');
+            if (charts.activity) charts.activity.destroy();
+
+            charts.activity = new Chart(ctxActivity, {
+                type: 'line',
+                data: {
+                    labels: ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'],
+                    datasets: [{
+                        label: 'Sesiones',
+                        data: [12, 19, 3, 5, 2, 3, 10], // Mock data for demo
+                        borderColor: '#bb86fc',
+                        backgroundColor: 'rgba(187, 134, 252, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // Gender Chart
+            const ctxGender = document.getElementById('genderChart').getContext('2d');
+            if (charts.gender) charts.gender.destroy();
+
+            charts.gender = new Chart(ctxGender, {
+                type: 'doughnut',
+                data: {
+                    labels: ['M', 'F'],
+                    datasets: [{
+                        data: [65, 35], // Mock data
+                        backgroundColor: ['#03dac6', '#ff79c6'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom', labels: { color: '#fff' } } }
+                }
+            });
+        }
+
+        // Init
+        loadAllData();
+        setInterval(loadAllData, 30000);
+    </script>
 </body>
 
 </html>

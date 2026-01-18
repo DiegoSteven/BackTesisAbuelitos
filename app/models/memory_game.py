@@ -78,6 +78,9 @@ class MemoryGameConfig(db.Model):
     memorization_time = db.Column(db.Integer, default=5)
     difficulty_label = db.Column(db.String(20), default='tutorial')
     
+    # Contador de sesiones consecutivas en "MAINTAIN" (para micro-ajustes)
+    consecutive_maintains = db.Column(db.Integer, default=0)
+    
     last_updated = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relación
@@ -89,5 +92,6 @@ class MemoryGameConfig(db.Model):
             'grid_size': self.grid_size,
             'time_limit': self.time_limit,
             'memorization_time': self.memorization_time,
-            'difficulty_label': self.difficulty_label
+            'difficulty_label': self.difficulty_label,
+            'consecutive_maintains': self.consecutive_maintains
         }

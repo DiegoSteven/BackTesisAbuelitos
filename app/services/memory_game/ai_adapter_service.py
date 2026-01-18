@@ -256,17 +256,57 @@ class AIAdapterService:
         # Aplicar ajustes finos
         base_config['time_limit'] += time_adjust
         base_config['difficulty_label'] = target_level
+        
+        # ═══════════════════════════════════════════════════════════
+        # MICRO-AJUSTES PROGRESIVOS EN PLATEAU (MAINTAIN)
+        # ═══════════════════════════════════════════════════════════
+        
+        consecutive_maintains = getattr(current_config, 'consecutive_maintains', 0)
+        
+        if decision == "maintain" and completed:
+            # El jugador se mantiene en el mismo nivel
+            # Aplicar micro-ajustes según el desempeño para evitar repetición exacta
+            
+            micro_adjustment_applied = False
+            
+            if consecutive_maintains >= 2:  # A partir de la 3ra sesión en MAINTAIN
+                if accuracy < 65:
+                    # Le cuesta un poco -> Facilitar LEVEMENTE (más tiempo)
+                    time_bonus = min(15, 5 * (consecutive_maintains - 1))  # +5s, +10s, +15s máx
+                    base_config['time_limit'] += time_bonus
+                    base_config['memorization_time'] = min(10, base_config['memorization_time'] + 1)
+                    reason += f" [Micro-ajuste: +{time_bonus}s por {consecutive_maintains} sesiones estables]"
+                    micro_adjustment_applied = True
+                    
+                elif accuracy >= 75:
+                    # Le va bien pero no lo suficiente para subir -> Retar LEVEMENTE (menos tiempo)
+                    time_penalty = min(10, 3 * (consecutive_maintains - 1))  # -3s, -6s, -10s máx
+                    base_config['time_limit'] = max(45, base_config['time_limit'] - time_penalty)
+                    base_config['memorization_time'] = max(1, base_config['memorization_time'] - 1)
+                    reason += f" [Micro-ajuste: -{time_penalty}s para mayor reto]"
+                    micro_adjustment_applied = True
+                
+                else:
+                    # Rango medio (65-75%) -> Ajuste neutro: solo variar memorización
+                    if consecutive_maintains % 2 == 0:
+                        base_config['memorization_time'] = min(10, base_config['memorization_time'] + 1)
+                        reason += " [Micro-ajuste: +1s memorización]"
+                    else:
+                        base_config['memorization_time'] = max(1, base_config['memorization_time'] - 1)
+                        reason += " [Micro-ajuste: -1s memorización]"
+                    micro_adjustment_applied = True
 
         result = {
             "analysis": {
                 "decision": decision,
                 "reason": reason,
-                "score": round(calculated_score, 1),  # ← SCORE CALCULADO, NO FIJO
+                "score": round(calculated_score, 1),
                 "metrics": {
                     "memory": memory_assessment,
                     "speed": speed_assessment,
                     "accuracy": accuracy_assessment
-                }
+                },
+                "consecutive_maintains": consecutive_maintains  # Para el servicio
             },
             "new_config": base_config
         }
