@@ -1,0 +1,75 @@
+Create a professional UML Activity Diagram for the "Abecedario Game" backend logic. Focus on Flask API and business logic flow.
+
+**CONTEXT:** 
+Adaptive word formation game with 3 difficulty levels. Backend uses hybrid approach: local JSON for FACIL/INTERMEDIO, Gemini AI batch for DIFICIL.
+
+**1. Swimlanes:**
+*   **User** (minimal interactions)
+*   **Unity Client** (requests only)
+*   **Backend (AbecedarioService + GeminiService + PostgreSQL)**
+
+**2. Main Flow:**
+
+**START: Challenge Request**
+*   `Unity` → `Backend`: GET /abecedario/next-challenge/{user_id}
+
+**BACKEND LOGIC:**
+
+**A. Level Determination (AbecedarioService.determinar_nivel_optimo)**
+1. Query last session from PostgreSQL
+2. *Decision:* "New User OR New Day?"
+   *   YES → Set level = FACIL
+   *   NO → Continue
+3. *Decision:* "Analyze Performance (last 5 sessions)"
+   *   Calculate: precision, avg_errors, avg_time, hints_used
+   *   *If Low Performance:*
+     * Precision <40% OR Many errors → Downgrade level
+     * DIFICIL + precision <30% → FACIL
+     * DIFICIL + precision ≥30% → INTERMEDIO
+     * INTERMEDIO → FACIL
+   *   *If Acceptable:* Continue
+4. Count completed words in current level
+5. *Decision:* "5 words completed?"
+   *   YES + precision ≥70% → Upgrade level
+   *   YES + precision <70% → Maintain level
+   *   NO → Maintain level
+
+**B. Word Generation (GeminiService.generate_next_challenge)**
+6. *Decision:* "Level Type?"
+   *   **FACIL/INTERMEDIO:**
+     * Load palabra from local JSON
+     * Add 2-3 distractor letters
+   *   **DIFICIL:**
+     * Check _palabra_buffer
+     * *If empty:*
+       - Get user stats (precision_reciente)
+       - Build adaptive prompt
+       - Call Gemini AI (batch 20 words)
+       - Store in buffer
+     * Pop word from buffer (FIFO)
+7. Add metadata: nivel, progreso (X/5), metricas_rendimiento
+8. Return challenge JSON
+
+**C. Session Save Flow**
+9. `Unity` → `Backend`: POST /abecedario/session
+   * Data: user_id, palabra, tiempo, errores, pistas, completado, nivel
+10. **Backend:**
+    * Save to PostgreSQL (abecedario_session table)
+    * Return success response
+
+**END: Next Challenge or Finish**
+11. *Decision:* "Continue?"
+    *   Session timeout OR Level completed → END
+    *   Otherwise → Loop to START
+
+**3. Styling:**
+*   Backend activities: Light Green
+*   AI activities: Light Purple
+*   Decisions: Yellow diamonds
+*   Database operations: Yellow boxes
+
+**4. Key Points:**
+*   Daily reset to FACIL
+*   Multi-factor analysis (precision, errors, time, hints)
+*   Hybrid generation (JSON vs AI batch)
+*   70% precision threshold for upgrade

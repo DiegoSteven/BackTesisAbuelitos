@@ -1,0 +1,86 @@
+Create a professional UML Sequence Diagram for the "Abecedario Game" backend interactions. Focus on API endpoints and business logic.
+
+**CONTEXT:**
+Backend Flask API with Gemini AI integration. Shows how the system determines difficulty and generates adaptive challenges.
+
+**1. Participants:**
+*   `Unity Client`
+*   `AbecedarioController` (Flask API)
+*   `AbecedarioService` (Business Logic)
+*   `GeminiService` (AI Wrapper)
+*   `PostgreSQL`
+*   `Gemini AI`
+
+**2. Main Sequences:**
+
+**SEQUENCE 1: Get Next Challenge**
+
+1. `Unity` → `AbecedarioController`: GET /abecedario/next-challenge/{user_id}
+2. `AbecedarioController` → `GeminiService`: generate_next_challenge(user_id)
+3. `GeminiService` → `AbecedarioService`: determinar_nivel_optimo(user_id)
+4. `AbecedarioService` → `PostgreSQL`: Query last session
+5. `PostgreSQL` → `AbecedarioService`: Return session data
+6. **Alt [User Status]:**
+   *   **[New User OR New Day]:**
+       * `AbecedarioService`: Set level = "facil"
+   *   **[Existing User]:**
+       * `AbecedarioService` → `AbecedarioService`: analizar_necesidad_bajar_nivel()
+       * `AbecedarioService` → `PostgreSQL`: Get last 5 sessions
+       * `PostgreSQL` → `AbecedarioService`: Return sessions
+       * `AbecedarioService`: Calculate metrics (precision, avg_errors, avg_time, hints)
+       * **Alt [Performance]:**
+           - **[Low (<40% precision)]:** Downgrade level
+           - **[Acceptable + 5 words + >70% precision]:** Upgrade level
+           - **[Otherwise]:** Maintain level
+7. `AbecedarioService` → `GeminiService`: Return level
+
+**SEQUENCE 1A: Word Generation (Hybrid)**
+
+8. **Alt [Level Type]:**
+   *   **[Level = "facil" OR "intermedio"]:**
+       * `GeminiService` → `AbecedarioService`: get_palabra_local(level)
+       * `AbecedarioService`: Load from JSON, add distractors
+       * `AbecedarioService` → `GeminiService`: Return challenge
+   *   **[Level = "dificil"]:**
+       * **Opt [Buffer Empty]:**
+           - `GeminiService` → `AbecedarioService`: get_performance_stats(user_id)
+           - `AbecedarioService` → `PostgreSQL`: Query sessions
+           - `PostgreSQL` → `AbecedarioService`: Return stats
+           - `AbecedarioService` → `GeminiService`: Return stats dict
+           - `GeminiService`: Build adaptive prompt (based on precision)
+           - `GeminiService` → `Gemini AI`: Request batch (20 words)
+           - `Gemini AI` → `GeminiService`: Return JSON array
+           - `GeminiService`: Store in _palabra_buffer
+       * `GeminiService`: Pop word from buffer
+9. `GeminiService`: Add metadata (nivel, progreso, metricas)
+10. `GeminiService` → `AbecedarioController`: Return challenge dict
+11. `AbecedarioController` → `Unity`: JSON Response (200)
+12. `Unity`: Display challenge
+
+**SEQUENCE 2: Save Session**
+
+13. `Unity` → `AbecedarioController`: POST /abecedario/session
+    * Body: {user_id, palabra_objetivo, tiempo_resolucion, cantidad_errores, pistas_usadas, completado, nivel_dificultad}
+14. `AbecedarioController` → `AbecedarioService`: save_session(user_id, data)
+15. `AbecedarioService` → `PostgreSQL`: INSERT abecedario_session
+16. `PostgreSQL` → `AbecedarioService`: Confirm
+17. `AbecedarioService` → `AbecedarioController`: Return session
+18. `AbecedarioController` → `Unity`: JSON Response (201)
+19. **Loop:** Unity requests next challenge (back to step 1)
+
+**3. Styling:**
+*   Solid arrows: Synchronous calls
+*   Dashed arrows: Returns
+*   Alt fragments: Conditional logic
+*   Opt fragments: Optional operations
+*   Colors:
+    * Backend: Light Green
+    * AI: Light Purple
+    * DB: Light Yellow
+
+**4. Key Points:**
+*   Backend controls all difficulty logic
+*   Hybrid generation saves API costs
+*   Batch AI (20 words) for efficiency
+*   Multi-factor performance analysis
+*   Daily level reset mechanism

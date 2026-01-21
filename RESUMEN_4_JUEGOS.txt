@@ -1,0 +1,244 @@
+================================================================================
+   RESUMEN DE FUNCIONAMIENTO - 4 JUEGOS COGNITIVOS PARA ADULTOS MAYORES
+================================================================================
+
+Este documento describe de forma básica cómo funciona cada uno de los 4 juegos
+que componen el sistema de estimulación cognitiva.
+
+================================================================================
+🎯 JUEGO 1: PASEO VIRTUAL (ATRAPA LA ESFERA)
+================================================================================
+
+OBJETIVO: Entrenar la atención selectiva, memoria de trabajo y velocidad de 
+procesamiento.
+
+MECÁNICA BÁSICA:
+- El jugador controla un personaje que se mueve entre 3 carriles
+- Aparecen esferas de diferentes colores (rojo, azul, amarillo) que caen
+- El jugador debe atrapar únicamente las esferas del COLOR CORRECTO
+- Si atrapa un color incorrecto o deja escapar el color correcto = ERROR
+- Debe alcanzar una META de aciertos antes de que se acabe el tiempo
+
+DIFICULTAD ADAPTATIVA:
+- Tutorial: Solo 1 color (rojo), velocidad lenta
+- Fácil: 1 color correcto, aumenta velocidad
+- Intermedio: 2 colores activos, mayor velocidad
+- Difícil: 3 colores activos, velocidad alta, más esferas simultáneas
+
+SISTEMA DE IA:
+- Gemini AI analiza el rendimiento del usuario después de cada sesión
+- Evalúa: precisión, errores por tipo, velocidad de reacción
+- Decide automáticamente si subir, bajar o mantener el nivel
+- Si el jugador falla en nivel Difícil, la IA puede reducir la dificultad
+- Ajusta parámetros: velocidad de esferas, intervalo de aparición, meta
+
+CONDICIONES DE VICTORIA/DERROTA:
+✅ Victoria: Alcanzar la meta de aciertos (ej: 15 aciertos)
+❌ Derrota: Errores > Aciertos (con mínimo 3 aciertos) O se acaba el tiempo
+
+SESIÓN:
+- Duración estimada: ~10 minutos
+- Se puede jugar múltiples niveles en una sesión
+- Al completar nivel Difícil, muestra estadísticas finales
+
+
+================================================================================
+🔤 JUEGO 2: FORMACIÓN DE PALABRAS (ABECEDARIO)
+================================================================================
+
+OBJETIVO: Entrenar el razonamiento verbal, vocabulario, memoria semántica y
+lenguaje.
+
+MECÁNICA BÁSICA:
+- La IA genera una palabra objetivo (ej: "CASA", "ELEFANTE")
+- Se muestran las letras de la palabra + letras distractoras desordenadas
+- El jugador debe seleccionar las letras en el ORDEN CORRECTO
+- La validación es LETRA POR LETRA en tiempo real
+- Si selecciona una letra incorrecta = ERROR INMEDIATO, nueva palabra
+
+DIFICULTAD ADAPTATIVA:
+- Fácil: Palabras cortas (3-4 letras), se muestra la palabra completa,
+  sin pista contextual
+- Intermedio: Palabras medias (5-6 letras), se muestra la palabra,
+  sin pista contextual
+- Difícil: Palabras largas (7-9 letras), solo muestra cantidad de letras,
+  pista contextual disponible mediante botón
+
+SISTEMA DE IA:
+- Gemini AI genera palabras adaptadas al rendimiento del usuario
+- En nivel Fácil/Intermedio: usa un JSON local con palabras predefinidas
+- En nivel Difícil: la IA genera LOTES (batches) de 10 palabras personalizadas
+- Analiza: tiempo de resolución, errores, uso de pistas
+- Ajusta complejidad de palabras según historial de precisión
+- Decide si avanzar de nivel después de completar N palabras (ej: 5)
+
+VALIDACIÓN INMEDIATA:
+- Si forma más letras de las necesarias → ERROR
+- Si la letra no coincide con la posición esperada → ERROR
+- Solo acepta la palabra completa correcta → ÉXITO
+
+PROGRESO:
+- Cada nivel requiere completar X palabras (configurable, ej: 5 palabras)
+- Al completar todas las palabras del nivel, avanza al siguiente
+- Si completa nivel Difícil, muestra panel de estadísticas finales
+
+SESIÓN:
+- Duración máxima: 8 minutos (480 segundos)
+- Temporizador visible con alertas de color cuando queda poco tiempo
+- Si se agota el tiempo, muestra panel de descanso
+
+
+================================================================================
+🎨 JUEGO 3: TREN DE COLORES
+================================================================================
+
+OBJETIVO: Entrenar atención sostenida, clasificación visual y toma de 
+decisiones rápidas.
+
+MECÁNICA BÁSICA:
+- Aparecen trenes de diferentes colores moviéndose por la pantalla
+- El jugador debe desviar cada tren a la estación del color correcto
+- Debe hacer clic/tap en el tren para cambiar su ruta antes de que pase
+- Si un tren llega a la estación incorrecta = ERROR
+- Si dos trenes chocan = CRASH (penalización mayor)
+
+DIFICULTAD ADAPTATIVA:
+- Fácil: 2 colores, trenes lentos, aparecen espaciados
+- Intermedio: 3 colores, velocidad media, mayor frecuencia de aparición
+- Difícil: 4+ colores, trenes rápidos, aparecen muy seguido, múltiples
+  trenes simultáneos
+
+SISTEMA DE IA:
+- El sistema analiza el rendimiento del jugador al finalizar la sesión
+- Métricas evaluadas: 
+  * Precisión de enrutamiento (correctos/totales)
+  * Cantidad de errores de ruta incorrecta
+  * Cantidad de crashes
+  * Estado de finalización (completado/abandonado)
+- La IA recomienda ajustes en:
+  * Velocidad de los trenes
+  * Frecuencia de aparición (spawn_rate)
+  * Cantidad de trenes totales
+  * Cantidad de colores activos
+  * Tiempo límite
+
+CONDICIONES:
+✅ Éxito: Enrutar correctamente todos los trenes sin crashes
+❌ Fallos: Acumular demasiados errores o crashes antes de completar
+
+SESIÓN:
+- Configuración flexible según nivel del jugador
+- La configuración se actualiza automáticamente después de cada sesión
+
+
+================================================================================
+🃏 JUEGO 4: MEMORIA CON CARTAS (MEMORY GAME)
+================================================================================
+
+OBJETIVO: Entrenar memoria visual, memoria de trabajo, atención y 
+concentración.
+
+MECÁNICA BÁSICA:
+- Se presentan pares de cartas boca abajo en una cuadrícula
+- El jugador voltea 2 cartas por turno
+- Si las cartas coinciden → Par encontrado (permanecen visibles)
+- Si no coinciden → Se voltean nuevamente boca abajo
+- Objetivo: Encontrar todos los pares antes de que se acabe el tiempo
+
+DIFICULTAD ADAPTATIVA:
+- Fácil: Cuadrícula pequeña (2x3 = 3 pares), más tiempo de memorización,
+  tiempo límite generoso
+- Intermedio: Cuadrícula media (3x4 = 6 pares), menos tiempo de memorización
+- Difícil: Cuadrícula grande (4x5 = 10 pares), tiempo de memorización corto,
+  tiempo límite reducido
+
+SISTEMA DE IA:
+- Gemini AI analiza el rendimiento después de cada sesión
+- Métricas evaluadas:
+  * Total de volteos (flips)
+  * Pares encontrados
+  * Tiempo transcurrido
+  * Estado de finalización
+  * Precisión (pares encontrados / intentos)
+  * Memory Score (0-10 basado en rendimiento)
+- La IA evalúa:
+  * Retención de memoria
+  * Velocidad de resolución
+  * Precisión general
+  * Puntuación global (overall_score)
+- Ajusta configuración:
+  * Tamaño de cuadrícula (grid_size)
+  * Cantidad de pares
+  * Tiempo de memorización inicial
+  * Tiempo límite total
+
+ANÁLISIS ADAPTATIVO:
+- Si la precisión es muy alta → Aumenta dificultad
+- Si el jugador tiene muchos errores → Reduce dificultad
+- Si mantiene buen desempeño → Mantiene nivel
+- Sistema de "consecutive_maintains": si mantiene el mismo nivel muchas veces
+  consecutivas, puede forzar un aumento de dificultad
+
+SESIÓN:
+- El jugador puede jugar múltiples rondas
+- La configuración se actualiza después de cada partida
+- Sistema de estadísticas acumuladas disponible
+
+
+================================================================================
+🧠 CARACTERÍSTICAS COMUNES A TODOS LOS JUEGOS
+================================================================================
+
+1. INTEGRACIÓN CON IA (GEMINI):
+   - Todos los juegos usan inteligencia artificial para adaptar dificultad
+   - Análisis personalizado del rendimiento de cada usuario
+   - Recomendaciones automáticas de nivel
+
+2. SISTEMA DE SESIONES:
+   - Cada partida se guarda en base de datos
+   - Historial completo de rendimiento
+   - Estadísticas acumuladas por usuario
+
+3. ARQUITECTURA:
+   - Frontend: Unity (C#) - Interfaz gráfica e interacción
+   - Backend: Python/Flask - API REST con lógica de negocio
+   - Base de Datos: SQLite/PostgreSQL - Almacenamiento de datos
+   - IA: Gemini AI - Análisis y adaptación
+
+4. PROGRESIÓN:
+   - Sistema de niveles: Tutorial → Fácil → Intermedio → Difícil
+   - Adaptación automática según rendimiento
+   - Feedback visual constante
+
+5. MÉTRICAS REGISTRADAS:
+   - Tiempo de juego
+   - Precisión/Aciertos
+   - Errores por tipo
+   - Nivel de dificultad
+   - Decisiones de IA
+   - Timestamps de sesiones
+
+6. EXPERIENCIA DEL USUARIO:
+   - Interfaz intuitiva adaptada para adultos mayores
+   - Feedback audiovisual (sonidos de acierto/error)
+   - Instrucciones claras al inicio de cada nivel
+   - Pantallas de estadísticas al finalizar
+
+
+================================================================================
+📊 OBJETIVO TERAPÉUTICO GENERAL DEL SISTEMA
+================================================================================
+
+El sistema completo está diseñado para estimular diferentes áreas cognitivas:
+
+- PASEO (Atrapa la Esfera): Atención selectiva, velocidad de procesamiento
+- ABECEDARIO (Palabras): Lenguaje, memoria semántica, razonamiento verbal
+- TREN DE COLORES: Atención sostenida, clasificación, toma de decisiones
+- MEMORIA CON CARTAS: Memoria visual, memoria de trabajo, concentración
+
+La combinación de los 4 juegos proporciona estimulación cognitiva integral,
+con dificultad adaptativa personalizada mediante IA para cada adulto mayor.
+
+================================================================================
+Documento generado: 2026-01-20
+================================================================================

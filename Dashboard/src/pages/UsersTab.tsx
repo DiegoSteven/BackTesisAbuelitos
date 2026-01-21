@@ -84,7 +84,10 @@ const UsersTab = () => {
                     res = await getUserAbecedarioSessions(selectedUser);
                     // El backend devuelve 'sesiones' para Abecedario, no 'sessions'
                     return res.data.sesiones || [];
-                case 'paseo': res = await getUserPaseoSessions(selectedUser); break;
+                case 'paseo': 
+                    res = await getUserPaseoSessions(selectedUser);
+                    // El backend ahora devuelve 'sesiones' agrupadas, no 'sessions'
+                    return res.data.sesiones || [];
                 case 'trenes': res = await getUserTrainSessions(selectedUser); break;
                 default: return [];
             }
@@ -376,12 +379,13 @@ const UsersTab = () => {
                                 {sessionsLoading ? (
                                     <div className="loading">Cargando sesiones...</div>
                                 ) : gameSessions && gameSessions.length > 0 ? (
-                                    selectedGame === 'abecedario' ? (
-                                        // Vista jerárquica para Abecedario: Sesión -> Niveles -> Palabras
+                                    selectedGame === 'abecedario' || selectedGame === 'paseo' ? (
+                                        // Vista jerárquica para Abecedario y Paseo: Sesión -> Niveles -> Palabras/Partidas
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                                             {gameSessions.map((sesion: any) => {
                                                 const sesionKey = sesion.fecha;
                                                 const isSessionExpanded = expandedSessions.has(sesionKey);
+                                                const isPaseo = selectedGame === 'paseo';
                                                 
                                                 return (
                                                     <div key={sesionKey} style={{
@@ -404,8 +408,8 @@ const UsersTab = () => {
                                                             style={{
                                                                 padding: '20px',
                                                                 cursor: 'pointer',
-                                                                background: isSessionExpanded ? 'linear-gradient(90deg, rgba(51, 154, 240, 0.1) 0%, transparent 100%)' : 'transparent',
-                                                                borderLeft: isSessionExpanded ? '4px solid #339af0' : '4px solid transparent',
+                                                                background: isSessionExpanded ? `linear-gradient(90deg, ${isPaseo ? 'rgba(252, 196, 25, 0.1)' : 'rgba(51, 154, 240, 0.1)'} 0%, transparent 100%)` : 'transparent',
+                                                                borderLeft: isSessionExpanded ? `4px solid ${isPaseo ? '#fcc419' : '#339af0'}` : '4px solid transparent',
                                                                 display: 'flex',
                                                                 justifyContent: 'space-between',
                                                                 alignItems: 'center',
@@ -417,22 +421,34 @@ const UsersTab = () => {
                                                                     {isSessionExpanded ? '▼' : '▶'}
                                                                 </div>
                                                                 <div>
-                                                                    <div style={{ fontWeight: 'bold', fontSize: '1.2em', color: '#339af0' }}>
+                                                                    <div style={{ fontWeight: 'bold', fontSize: '1.2em', color: isPaseo ? '#fcc419' : '#339af0' }}>
                                                                         📅 Sesión: {sesion.fecha}
                                                                     </div>
                                                                     <div style={{ fontSize: '0.9em', color: '#888', marginTop: '5px' }}>
-                                                                        {sesion.resumen.total_palabras} palabras • {sesion.resumen.palabras_completadas} completadas • {sesion.resumen.tiempo_total.toFixed(1)}s total
+                                                                        {isPaseo ? (
+                                                                            <>
+                                                                                {sesion.resumen.total_partidas} partidas • {sesion.resumen.victorias} victorias • {sesion.resumen.derrotas} derrotas • {sesion.resumen.precision_promedio.toFixed(1)}% precisión
+                                                                            </>
+                                                                        ) : (
+                                                                            <>
+                                                                                {sesion.resumen.total_palabras} palabras • {sesion.resumen.palabras_completadas} completadas • {sesion.resumen.tiempo_total.toFixed(1)}s total
+                                                                            </>
+                                                                        )}
                                                                     </div>
                                                                 </div>
                                                             </div>
                                                             <div style={{
                                                                 padding: '8px 15px',
-                                                                background: 'rgba(51, 154, 240, 0.2)',
+                                                                background: isPaseo ? 'rgba(252, 196, 25, 0.2)' : 'rgba(51, 154, 240, 0.2)',
                                                                 borderRadius: '20px',
                                                                 fontSize: '0.9em',
-                                                                color: '#339af0'
+                                                                color: isPaseo ? '#fcc419' : '#339af0'
                                                             }}>
-                                                                {((sesion.resumen.palabras_completadas / sesion.resumen.total_palabras) * 100).toFixed(0)}% completado
+                                                                {isPaseo ? (
+                                                                    <>🎯 {sesion.resumen.total_aciertos} aciertos</>
+                                                                ) : (
+                                                                    <>{((sesion.resumen.palabras_completadas / sesion.resumen.total_palabras) * 100).toFixed(0)}% completado</>
+                                                                )}
                                                             </div>
                                                         </div>
                                                         
@@ -485,55 +501,123 @@ const UsersTab = () => {
                                                                                         {nivel.nivel.toUpperCase()}
                                                                                     </span>
                                                                                     <span style={{ color: '#aaa' }}>
-                                                                                        {nivel.palabras.length} palabra{nivel.palabras.length !== 1 ? 's' : ''}
+                                                                                        {isPaseo ? (
+                                                                                            <>{nivel.partidas.length} partida{nivel.partidas.length !== 1 ? 's' : ''}</>
+                                                                                        ) : (
+                                                                                            <>{nivel.palabras.length} palabra{nivel.palabras.length !== 1 ? 's' : ''}</>
+                                                                                        )}
                                                                                     </span>
+                                                                                </div>
+                                                                                <div style={{ 
+                                                                                    fontSize: '0.95em', 
+                                                                                    color: isPaseo ? '#fcc419' : '#339af0',
+                                                                                    fontWeight: '600',
+                                                                                    padding: '5px 12px',
+                                                                                    background: isPaseo ? 'rgba(252, 196, 25, 0.15)' : 'rgba(51, 154, 240, 0.15)',
+                                                                                    borderRadius: '8px'
+                                                                                }}>
+                                                                                    {isPaseo ? (
+                                                                                        <>⏱️ {nivel.partidas.reduce((sum: number, p: any) => sum + (p.duracion || 0), 0).toFixed(1)}s</>
+                                                                                    ) : (
+                                                                                        <>⏱️ {nivel.palabras.reduce((sum: number, p: any) => sum + p.tiempo, 0).toFixed(1)}s</>
+                                                                                    )}
                                                                                 </div>
                                                                             </div>
                                                                             
-                                                                            {/* Palabras del nivel */}
+                                                                            {/* Detalles del nivel */}
                                                                             {isLevelExpanded && (
                                                                                 <div style={{ padding: '0 15px 15px 45px' }}>
                                                                                     <table style={{ width: '100%', fontSize: '0.9em' }}>
                                                                                         <thead>
                                                                                             <tr style={{ borderBottom: '1px solid #2c2e33' }}>
-                                                                                                <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>Palabra</th>
-                                                                                                <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>Hora</th>
-                                                                                                <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>Tiempo</th>
-                                                                                                <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>Errores</th>
-                                                                                                <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>Pistas</th>
-                                                                                                <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>Estado</th>
+                                                                                                {isPaseo ? (
+                                                                                                    <>
+                                                                                                        <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>ID</th>
+                                                                                                        <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>Hora</th>
+                                                                                                        <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>Duración</th>
+                                                                                                        <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>Aciertos</th>
+                                                                                                        <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>Errores</th>
+                                                                                                        <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>Precisión</th>
+                                                                                                        <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>Resultado</th>
+                                                                                                    </>
+                                                                                                ) : (
+                                                                                                    <>
+                                                                                                        <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>Palabra</th>
+                                                                                                        <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>Hora</th>
+                                                                                                        <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>Tiempo</th>
+                                                                                                        <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>Errores</th>
+                                                                                                        <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>Pistas</th>
+                                                                                                        <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>Estado</th>
+                                                                                                    </>
+                                                                                                )}
                                                                                             </tr>
                                                                                         </thead>
                                                                                         <tbody>
-                                                                                            {nivel.palabras.map((palabra: any, idx: number) => (
-                                                                                                <tr key={idx} style={{ borderBottom: '1px solid #1a1d2e' }}>
-                                                                                                    <td style={{ padding: '10px' }}>
-                                                                                                        <strong>{palabra.palabra}</strong>
-                                                                                                    </td>
-                                                                                                    <td style={{ padding: '10px', color: '#888' }}>
-                                                                                                        {palabra.hora}
-                                                                                                    </td>
-                                                                                                    <td style={{ padding: '10px' }}>
-                                                                                                        {palabra.tiempo.toFixed(1)}s
-                                                                                                    </td>
-                                                                                                    <td style={{ 
-                                                                                                        padding: '10px',
-                                                                                                        color: palabra.errores > 2 ? '#ff6b6b' : 'inherit'
-                                                                                                    }}>
-                                                                                                        {palabra.errores}
-                                                                                                    </td>
-                                                                                                    <td style={{ padding: '10px' }}>
-                                                                                                        {palabra.pistas}
-                                                                                                    </td>
-                                                                                                    <td style={{ padding: '10px' }}>
-                                                                                                        <span style={{ 
-                                                                                                            color: palabra.completado ? '#51cf66' : '#aaa'
+                                                                                            {isPaseo ? (
+                                                                                                nivel.partidas.map((partida: any, idx: number) => (
+                                                                                                    <tr key={idx} style={{ borderBottom: '1px solid #1a1d2e' }}>
+                                                                                                        <td style={{ padding: '10px' }}>
+                                                                                                            <strong>#{partida.id}</strong>
+                                                                                                        </td>
+                                                                                                        <td style={{ padding: '10px', color: '#888' }}>
+                                                                                                            {partida.hora}
+                                                                                                        </td>
+                                                                                                        <td style={{ padding: '10px' }}>
+                                                                                                            {partida.duracion?.toFixed(1) || '-'}s
+                                                                                                        </td>
+                                                                                                        <td style={{ padding: '10px', color: '#51cf66' }}>
+                                                                                                            {partida.aciertos}
+                                                                                                        </td>
+                                                                                                        <td style={{ 
+                                                                                                            padding: '10px',
+                                                                                                            color: partida.errores > 5 ? '#ff6b6b' : 'inherit'
                                                                                                         }}>
-                                                                                                            {palabra.completado ? '✓ Completado' : '✗ Incompleto'}
-                                                                                                        </span>
-                                                                                                    </td>
-                                                                                                </tr>
-                                                                                            ))}
+                                                                                                            {partida.errores}
+                                                                                                        </td>
+                                                                                                        <td style={{ padding: '10px' }}>
+                                                                                                            {partida.precision?.toFixed(1) || '-'}%
+                                                                                                        </td>
+                                                                                                        <td style={{ padding: '10px' }}>
+                                                                                                            <span style={{ 
+                                                                                                                color: partida.resultado === 'victoria' ? '#51cf66' : '#ff6b6b',
+                                                                                                                fontWeight: 'bold'
+                                                                                                            }}>
+                                                                                                                {partida.resultado === 'victoria' ? '✓ Victoria' : `✗ ${partida.razon_derrota || 'Derrota'}`}
+                                                                                                            </span>
+                                                                                                        </td>
+                                                                                                    </tr>
+                                                                                                ))
+                                                                                            ) : (
+                                                                                                nivel.palabras.map((palabra: any, idx: number) => (
+                                                                                                    <tr key={idx} style={{ borderBottom: '1px solid #1a1d2e' }}>
+                                                                                                        <td style={{ padding: '10px' }}>
+                                                                                                            <strong>{palabra.palabra}</strong>
+                                                                                                        </td>
+                                                                                                        <td style={{ padding: '10px', color: '#888' }}>
+                                                                                                            {palabra.hora}
+                                                                                                        </td>
+                                                                                                        <td style={{ padding: '10px' }}>
+                                                                                                            {palabra.tiempo.toFixed(1)}s
+                                                                                                        </td>
+                                                                                                        <td style={{ 
+                                                                                                            padding: '10px',
+                                                                                                            color: palabra.errores > 2 ? '#ff6b6b' : 'inherit'
+                                                                                                        }}>
+                                                                                                            {palabra.errores}
+                                                                                                        </td>
+                                                                                                        <td style={{ padding: '10px' }}>
+                                                                                                            {palabra.pistas}
+                                                                                                        </td>
+                                                                                                        <td style={{ padding: '10px' }}>
+                                                                                                            <span style={{ 
+                                                                                                                color: palabra.completado ? '#51cf66' : '#aaa'
+                                                                                                            }}>
+                                                                                                                {palabra.completado ? '✓ Completado' : '✗ Incompleto'}
+                                                                                                            </span>
+                                                                                                        </td>
+                                                                                                    </tr>
+                                                                                                ))
+                                                                                            )}
                                                                                         </tbody>
                                                                                     </table>
                                                                                 </div>
@@ -565,15 +649,6 @@ const UsersTab = () => {
                                                             <th>Métricas</th>
                                                         </tr>
                                                     )}
-                                                    {selectedGame === 'paseo' && (
-                                                    <tr>
-                                                        <th>ID</th>
-                                                        <th>Nivel</th>
-                                                        <th>Aciertos</th>
-                                                        <th>Precisión</th>
-                                                        <th>Resultado</th>
-                                                    </tr>
-                                                )}
                                                 {selectedGame === 'trenes' && (
                                                     <tr>
                                                         <th>ID</th>
@@ -606,20 +681,6 @@ const UsersTab = () => {
                                                                     </td>
                                                                 </>
                                                             )}
-                                                            {selectedGame === 'paseo' && (
-                                                            <>
-                                                                <td>{session.id}</td>
-                                                                <td><span className="badge">{session.nivel_dificultad}</span></td>
-                                                                <td>{session.esferas_rojas_atrapadas}</td>
-                                                                <td>{session.precision?.toFixed(1)}%</td>
-                                                                <td>
-                                                                    <span style={{ color: session.resultado === 'victoria' ? '#51cf66' : '#ff6b6b', fontWeight: 'bold' }}>
-                                                                        {session.resultado === 'victoria' ? '✓ Victoria' : '✗ Derrota'}
-                                                                    </span>
-                                                                </td>
-                                                                <td style={{ fontSize: '0.9em', color: '#aaa' }}>{session.recomendacion_siguiente || '-'}</td>
-                                                            </>
-                                                        )}
                                                             {selectedGame === 'trenes' && (
                                                                 <>
                                                                     <td>{session.id}</td>

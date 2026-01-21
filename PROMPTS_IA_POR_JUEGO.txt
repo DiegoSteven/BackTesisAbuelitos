@@ -1,0 +1,477 @@
+================================================================================
+        RESUMEN DE PROMPTS Y ANÁLISIS DE IA POR JUEGO
+================================================================================
+
+Este documento describe los prompts enviados a la IA (Gemini) y cómo se 
+procesan las respuestas JSON para cada uno de los 4 juegos cognitivos.
+
+================================================================================
+🎯 JUEGO 1: PASEO VIRTUAL (ATRAPA LA ESFERA)
+================================================================================
+
+MODELO IA UTILIZADO: Gemini 2.5 Flash
+
+USO DE IA: 
+- La IA se invoca SOLO cuando el jugador pierde en nivel DIFÍCIL
+- Para otros niveles usa lógica determinista simple (sin costo de tokens)
+
+--------------------------------------------------------------------------------
+PROMPT ENVIADO A GEMINI
+--------------------------------------------------------------------------------
+
+Contexto: "Eres un terapeuta cognitivo. Analiza el rendimiento de un adulto 
+mayor en nivel DIFICIL"
+
+DATOS ENVIADOS:
+- ÚLTIMA SESIÓN DIFÍCIL:
+  * Aciertos: X/Meta
+  * Porcentaje de aciertos
+  
+- HISTORIAL (últimas 3 sesiones DIFÍCIL):
+  * Total de intentos
+  * Promedio de precisión
+  * Aciertos totales
+  * Errores totales
+
+DECISIÓN REQUERIDA:
+1. ¿A qué nivel bajar? FACIL, INTERMEDIO o DIFICIL (raramente)
+2. ¿Qué velocidad usar en ESE nivel? (ajustar según frustración)
+
+VELOCIDADES NORMALES DE REFERENCIA:
+- FACIL: 3.0
+- INTERMEDIO: 4.0
+- DIFICIL: 5.0
+
+GUÍA PARA LA IA:
+- Si <30% aciertos → FACIL, velocidad 2.5-3.0 (reducir frustración)
+- Si 30-60% aciertos → INTERMEDIO, velocidad 3.5-4.0
+- Si >60% aciertos → DIFICIL, velocidad 4.5-5.0 (estuvo cerca)
+- Reducir velocidad si precisión <50% o muchos errores
+
+--------------------------------------------------------------------------------
+FORMATO JSON DE RESPUESTA ESPERADO
+--------------------------------------------------------------------------------
+
+{
+  "nivel_recomendado": "facil",
+  "razonamiento_breve": "Tuvo X% aciertos, frustración alta",
+  "velocidad_ajustada": 2.5
+}
+
+CAMPOS:
+- nivel_recomendado: "facil" | "intermedio" | "dificil"
+- razonamiento_breve: Texto corto explicando la decisión
+- velocidad_ajustada: Número decimal entre 2.0 y 6.0
+
+--------------------------------------------------------------------------------
+PROCESAMIENTO DE LA RESPUESTA
+--------------------------------------------------------------------------------
+
+1. Se extrae el JSON de la respuesta de texto de Gemini
+2. Se valida que contenga los 3 campos requeridos
+3. Se guardan temporalmente:
+   - nivel_recomendado → para decidir el siguiente nivel
+   - velocidad_ajustada → se aplica en la configuración del nivel
+4. Se genera el plan de sesión con estos parámetros ajustados
+
+FALLBACK (si falla Gemini):
+- Análisis simple sin IA basado en porcentaje:
+  * <30% → FACIL
+  * 30-60% → INTERMEDIO
+  * >60% → DIFICIL
+
+
+================================================================================
+🔤 JUEGO 2: FORMACIÓN DE PALABRAS (ABECEDARIO)
+================================================================================
+
+MODELO IA UTILIZADO: Gemini 2.5 Flash Lite
+
+ESTRATEGIA HÍBRIDA DE AHORRO:
+- Niveles FACIL e INTERMEDIO: Usa JSON local (palabras predefinidas) → $0
+- Nivel DIFICIL: Usa IA con sistema de BATCH (lotes de 20 palabras)
+- Ahorro: 95% en costos de API
+
+--------------------------------------------------------------------------------
+PROMPT ENVIADO A GEMINI
+--------------------------------------------------------------------------------
+
+Contexto: "Eres un terapeuta cognitivo. Genera 20 PALABRAS DIFERENTES en 
+español para un juego de memoria adaptativo."
+
+DATOS ENVIADOS:
+- NIVEL ACTUAL: DIFICIL
+  * Descripción: Palabras más complejas pero conocidas
+  * Longitud: 5-7 letras
+  * Letras distractoras: 0-1
+
+- RENDIMIENTO DEL USUARIO (últimas sesiones):
+  * Total sesiones
+  * Tasa de éxito global (%)
+  * Precisión reciente (%)
+  * Promedio de errores
+  * Estado actual (razonamiento del sistema)
+
+- PALABRAS YA USADAS: Lista de palabras recientes (NO REPETIR)
+
+INSTRUCCIONES PARA ADAPTAR DIFICULTAD:
+- Si precisión reciente <50%: Usa palabras MÁS COMUNES del día a día
+- Si precisión 50-80%: Usa palabras comunes con ligera complejidad
+- Si precisión >80%: Puedes usar palabras conocidas más desafiantes
+
+REGLAS ESTRICTAS:
+- Palabras apropiadas para adultos mayores
+- TODAS LAS LETRAS EN MAYÚSCULAS (pueden tener acentos y ñ)
+- Letras distractoras también en MAYÚSCULAS
+- NO REPETIR palabras ya usadas
+- Cada palabra con pista clara sin revelar la palabra
+- Ajustar complejidad según precisión reciente
+- Formato JSON válido
+
+--------------------------------------------------------------------------------
+FORMATO JSON DE RESPUESTA ESPERADO (BATCH)
+--------------------------------------------------------------------------------
+
+{
+  "palabras": [
+    {
+      "palabra_objetivo": "JARDÍN",
+      "letras_distractoras": ["L", "M"],
+      "pista_contextual": "Espacio verde con plantas"
+    },
+    {
+      "palabra_objetivo": "COCINA",
+      "letras_distractoras": ["T", "R"],
+      "pista_contextual": "Lugar donde se prepara comida"
+    }
+    ... (20 palabras en total)
+  ]
+}
+
+CAMPOS POR PALABRA:
+- palabra_objetivo: String en MAYÚSCULAS (5-7 letras)
+- letras_distractoras: Array de 0-1 letras en MAYÚSCULAS
+- pista_contextual: String con pista sin revelar la palabra
+
+--------------------------------------------------------------------------------
+PROCESAMIENTO DE LA RESPUESTA
+--------------------------------------------------------------------------------
+
+1. Se extrae el JSON de la respuesta
+2. Se valida que contenga el array "palabras"
+3. Para cada palabra se valida:
+   - Tiene los 3 campos requeridos
+   - palabra_objetivo se convierte a MAYÚSCULAS (forzado)
+   - letras_distractoras se convierten a MAYÚSCULAS (forzado)
+4. Las palabras válidas se guardan en un BUFFER en memoria
+5. Cada solicitud de palabra consume una del buffer
+6. Cuando el buffer se vacía, se genera un nuevo lote de 20
+
+RESULTADO:
+- Buffer de 20 palabras = 1 llamada a API
+- Sin buffer = 20 llamadas a API
+- AHORRO: 95% de llamadas
+
+
+================================================================================
+🎨 JUEGO 3: TREN DE COLORES
+================================================================================
+
+MODELO IA UTILIZADO: Gemini 1.5 Flash
+
+USO DE IA:
+- Se usa SOLO para casos ambiguos (precisión entre 50-85%)
+- Casos obvios (<50% o >85%) usan lógica determinista
+
+--------------------------------------------------------------------------------
+PROMPT ENVIADO A GEMINI
+--------------------------------------------------------------------------------
+
+Contexto: "Juego cognitivo adultos mayores."
+
+DATOS ENVIADOS (PROMPT ULTRA-COMPACTO):
+- Precisión: XX%
+- Velocidad actual: X.X
+
+DECISIÓN REQUERIDA:
+"Decide: si mejora tendencia→subir, si errores frecuentes→mantener/bajar."
+
+NOTA: Este es un prompt EXTREMADAMENTE optimizado para reducir tokens.
+
+--------------------------------------------------------------------------------
+FORMATO JSON DE RESPUESTA ESPERADO
+--------------------------------------------------------------------------------
+
+{
+  "d": "up" | "down" | "keep",
+  "r": "razón corta"
+}
+
+CAMPOS (ultra-abreviados):
+- d (decision): "up" (subir) | "down" (bajar) | "keep" (mantener)
+- r (reason): Texto breve explicando la decisión
+
+MAPEO DE DECISIONES:
+- "up" → "increase_difficulty"
+- "down" → "decrease_difficulty"
+- "keep" → "maintain"
+
+--------------------------------------------------------------------------------
+PROCESAMIENTO DE LA RESPUESTA
+--------------------------------------------------------------------------------
+
+1. Se extrae el JSON (eliminando markdown si existe)
+2. Se mapea la decisión:
+   - "up" → Incrementar velocidad +0.3 (límite: 6.0)
+   - "down" → Decrementar velocidad -0.5 (límite: 3.0)
+   - "keep" → Mantener velocidad actual
+3. Se construye nueva configuración con:
+   - Velocidad ajustada (ADAPTATIVO)
+   - Spawn rate ajustado (ADAPTATIVO)
+   - Total de trenes (FIJO según dificultad)
+   - Cantidad de colores (FIJO según dificultad)
+
+VALORES FIJOS POR NIVEL:
+- Easy: 6 trenes, 3 colores
+- Medium: 8 trenes, 4 colores
+- Hard: 10 trenes, 5 colores
+
+LÓGICA CLÁSICA (sin IA):
+- Timeout → Siempre bajar
+- Precisión >=85% → Subir
+- Precisión <50% → Bajar
+- Precisión 50-85% → Mantener (o usar IA si disponible)
+
+
+================================================================================
+🃏 JUEGO 4: MEMORIA CON CARTAS (MEMORY GAME)
+================================================================================
+
+MODELO IA UTILIZADO: Gemini 2.0 Flash Exp
+
+USO DE IA:
+- Se intenta usar IA para análisis completo
+- Si falla, usa lógica determinista robusta (fallback)
+
+--------------------------------------------------------------------------------
+PROMPT ENVIADO A GEMINI
+--------------------------------------------------------------------------------
+
+Contexto: "Actúa como un sistema experto de ajuste de dificultad para un juego
+de memoria terapéutico para adultos mayores."
+
+DATOS DE LA SESIÓN:
+- Dificultad actual
+- Resultado: VICTORIA o DERROTA (Tiempo Agotado)
+- Pares encontrados: X de Y
+- Intentos (flips): Z
+- Tiempo usado: Ts (Límite: TLs)
+- Precisión: X%
+
+REGLAS DE AJUSTE:
+1. SI PERDIÓ (Tiempo agotado):
+   - DEBE facilitar el juego
+   - Prioridad: Aumentar time_limit (+15-30s) O reducir total_pairs
+   - Nunca aumentar dificultad si perdió
+
+2. SI GANÓ (Completado):
+   - Evaluar desempeño (Velocidad y Precisión)
+   - Si fue MUY FÁCIL → Aumentar dificultad
+   - Si fue NORMAL → Mantener o ajustes leves
+   - Si le costó mucho → Mantener o facilitar ligeramente
+
+NIVELES DISPONIBLES (Referencia):
+{
+  "tutorial": {total_pairs: 3, grid_size: "2x3", time_limit: 60, ...},
+  "easy": {total_pairs: 4, grid_size: "2x4", time_limit: 90, ...},
+  "medium": {total_pairs: 6, grid_size: "3x4", time_limit: 120, ...},
+  "hard": {total_pairs: 8, grid_size: "2x8", time_limit: 150, ...},
+  "expert": {total_pairs: 10, grid_size: "4x5", time_limit: 180, ...},
+  "master": {total_pairs: 12, grid_size: "3x8", time_limit: 200, ...}
+}
+
+--------------------------------------------------------------------------------
+FORMATO JSON DE RESPUESTA ESPERADO
+--------------------------------------------------------------------------------
+
+{
+  "analysis": {
+    "decision": "increase" | "decrease" | "maintain",
+    "reason": "Explicación corta para el terapeuta",
+    "score": 1-10 (Calidad del juego),
+    "metrics": {
+      "memory": "low" | "medium" | "high",
+      "speed": "slow" | "normal" | "fast",
+      "accuracy": "low" | "medium" | "high"
+    }
+  },
+  "new_config": {
+    "difficulty_label": "nombre_del_nivel",
+    "total_pairs": int,
+    "grid_size": "FxC" (ej: "3x4"),
+    "time_limit": int,
+    "memorization_time": int
+  }
+}
+
+CAMPOS:
+- decision: "increase" (subir) | "decrease" (bajar) | "maintain" (mantener)
+- reason: Explicación breve para el terapeuta
+- score: Calificación de 1-10 del desempeño
+- metrics: Evaluación cualitativa (memory, speed, accuracy)
+- new_config: Configuración completa para la próxima sesión
+
+--------------------------------------------------------------------------------
+PROCESAMIENTO DE LA RESPUESTA
+--------------------------------------------------------------------------------
+
+1. Se limpia el JSON (eliminar markdown ```json ... ```)
+2. Se valida la estructura completa
+3. Si falta grid_size, se calcula automáticamente según total_pairs
+4. Se detectan campos cambiados (total_pairs, time_limit, difficulty)
+5. Se retorna análisis completo con:
+   - Decisión de ajuste
+   - Razón detallada
+   - Resumen de cambios
+   - Nueva configuración
+   - Evaluación de desempeño
+
+FALLBACK (Lógica Determinista):
+
+CÁLCULO DE SCORE:
+- Base (0-6 puntos): Precisión (accuracy/100 * 6)
+- Bonus velocidad (0-2 puntos):
+  * Muy rápido (<50% tiempo): +2.0
+  * Rápido (50-70%): +1.5
+  * Normal (70-90%): +1.0
+  * Lento (>90%): +0.5
+- Bonus completar (0-2 puntos): 
+  * Completado: +2.0
+  * No completado: 0
+- Score final: min(10, suma de puntos)
+
+MÉTRICAS CUALITATIVAS:
+- Memory: high (>=80%), medium (>=50%), low (<50%)
+- Speed: fast (<50% tiempo), normal (50-80%), slow (>80%)
+- Accuracy: high (>=80%), medium (>=50%), low (<50%)
+
+LÓGICA DE AJUSTE:
+- Si PERDIÓ: decrease (bajar nivel o dar más tiempo)
+- Si GANÓ con alta precisión y rápido (>80% y <60% tiempo): increase
+- Si GANÓ con baja precisión (<50%): maintain (para practicar)
+- Si GANÓ normal: maintain
+
+MICRO-AJUSTES PROGRESIVOS (si se mantiene 3+ sesiones):
+- Si precisión <65%: +5s, +10s, +15s en time_limit
+- Si precisión >=75%: -3s, -6s, -10s en time_limit
+- Ajustes en memorization_time (±1s)
+
+
+================================================================================
+📊 COMPARACIÓN DE ESTRATEGIAS DE IA POR JUEGO
+================================================================================
+
++------------------+-------------------+------------------+--------------------+
+| JUEGO            | MODELO GEMINI     | CUÁNDO USA IA    | ESTRATEGIA AHORRO  |
++------------------+-------------------+------------------+--------------------+
+| Paseo            | 2.5 Flash         | Solo derrota     | Lógica simple 95%  |
+|                  |                   | en DIFICIL       | del tiempo         |
++------------------+-------------------+------------------+--------------------+
+| Abecedario       | 2.5 Flash Lite    | Solo nivel       | Batch de 20        |
+|                  |                   | DIFICIL          | palabras (95%↓)    |
++------------------+-------------------+------------------+--------------------+
+| Tren Colores     | 1.5 Flash         | Casos ambiguos   | IA solo 50-85%     |
+|                  |                   | (50-85%)         | precisión          |
++------------------+-------------------+------------------+--------------------+
+| Memoria          | 2.0 Flash Exp     | Siempre intenta  | Fallback robusto   |
+|                  |                   | (con fallback)   | si falla IA        |
++------------------+-------------------+------------------+--------------------+
+
+CARACTERÍSTICAS COMUNES:
+- Todos extraen JSON de respuestas de texto
+- Todos tienen fallback/lógica clásica por seguridad
+- Todos envían datos de rendimiento reciente
+- Todos reciben configuración para próxima sesión
+
+
+================================================================================
+🔑 ELEMENTOS CLAVE DE DISEÑO DE PROMPTS
+================================================================================
+
+1. CONTEXTO CLARO:
+   - Siempre se especifica que es para adultos mayores
+   - Se da rol a la IA ("terapeuta cognitivo", "sistema experto")
+
+2. DATOS ESTRUCTURADOS:
+   - Se envían métricas cuantificables (precisión, tiempo, errores)
+   - Se incluye historial reciente cuando es relevante
+
+3. GUÍAS EXPLÍCITAS:
+   - Se dan umbrales numéricos (ej: <30%, 50-85%, >85%)
+   - Se especifican acciones según cada caso
+
+4. FORMATO JSON ESTRICTO:
+   - Se solicita JSON válido
+   - Se da ejemplo del formato esperado
+   - Se especifican nombres exactos de campos
+
+5. OPTIMIZACIÓN DE TOKENS:
+   - Paseo: Prompt detallado pero solo para casos críticos
+   - Abecedario: Batch para reducir llamadas
+   - Tren: Prompt ultra-compacto para casos ambiguos
+   - Memoria: Prompt completo pero con fallback robusto
+
+6. VALIDACIÓN DEFENSIVA:
+   - Siempre se limpia la respuesta (eliminar markdown)
+   - Siempre se valida estructura JSON
+   - Siempre se fuerzan tipos de datos (MAYÚSCULAS, números)
+   - Siempre hay plan B si la IA falla
+
+
+================================================================================
+📈 FLUJO GENERAL DE USO DE IA
+================================================================================
+
+Para todos los juegos:
+
+1. PREPARACIÓN:
+   - Recopilar datos de la sesión actual
+   - Obtener historial relevante (últimas 3-10 sesiones)
+   - Calcular métricas (precisión, tiempo, errores)
+
+2. DECISIÓN DE USAR IA:
+   - Paseo: Solo si perdió en DIFICIL
+   - Abecedario: Solo nivel DIFICIL (batch)
+   - Tren: Solo precisión 50-85%
+   - Memoria: Siempre intenta (con fallback)
+
+3. CONSTRUCCIÓN DEL PROMPT:
+   - Contexto del juego y objetivo terapéutico
+   - Datos cuantitativos del rendimiento
+   - Guías/reglas para la decisión
+   - Formato JSON esperado con ejemplo
+
+4. ENVÍO Y RECEPCIÓN:
+   - Llamada al modelo de Gemini correspondiente
+   - Recepción de texto con JSON embebido
+
+5. PARSEO Y VALIDACIÓN:
+   - Extraer JSON del texto (eliminar markdown)
+   - Validar estructura y campos requeridos
+   - Normalizar datos (MAYÚSCULAS, redondeos)
+   - Aplicar límites (min/max de velocidad, tiempo, etc.)
+
+6. APLICACIÓN:
+   - Configurar parámetros para próxima sesión
+   - Guardar decisión de IA en base de datos
+   - Retornar configuración al frontend
+
+7. FALLBACK (si falla):
+   - Usar lógica determinista clásica
+   - Registrar error pero continuar servicio
+   - Garantizar experiencia sin interrupciones
+
+
+================================================================================
+Documento generado: 2026-01-20
+================================================================================

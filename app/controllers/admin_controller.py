@@ -380,18 +380,98 @@ class AdminController:
     def get_user_paseo_sessions(user_id):
         """
         GET /admin/user-paseo-sessions/<user_id>
-        Obtiene todas las sesiones de paseo de un usuario específico
+        Obtiene sesiones de paseo agrupadas por fecha y nivel
+        Estructura: Sesión (por fecha) -> Niveles -> Partidas individuales
         """
         try:
             sessions = PaseoSession.query.filter_by(user_id=user_id).\
-                order_by(PaseoSession.created_at.desc()).\
+                order_by(PaseoSession.fecha_juego.desc(), PaseoSession.created_at.asc()).\
                 all()
+            
+            # Agrupar por FECHA (sesión del día)
+            sesiones_agrupadas = {}
+            for session in sessions:
+                fecha = session.fecha_juego.isoformat()
+                
+                if fecha not in sesiones_agrupadas:
+                    sesiones_agrupadas[fecha] = {
+                        'fecha': fecha,
+                        'niveles': {},
+                        'resumen': {
+                            'total_partidas': 0,
+                            'victorias': 0,
+                            'derrotas': 0,
+                            'precision_promedio': 0,
+                            'total_aciertos': 0
+                        }
+                    }
+                
+                # Agrupar por NIVEL dentro de cada sesión
+                nivel = session.nivel_dificultad or 'facil'
+                if nivel not in sesiones_agrupadas[fecha]['niveles']:
+                    sesiones_agrupadas[fecha]['niveles'][nivel] = {
+                        'nivel': nivel,
+                        'partidas': []
+                    }
+                
+                # Agregar partida al nivel correspondiente
+                sesiones_agrupadas[fecha]['niveles'][nivel]['partidas'].append({
+                    'id': session.id,
+                    'hora': session.created_at.strftime('%H:%M:%S'),
+                    'duracion': session.tiempo_total_sesion or session.duracion_segmento,
+                    'aciertos': session.esferas_rojas_atrapadas,
+                    'errores': session.esferas_azules_atrapadas,
+                    'precision': session.precision,
+                    'resultado': session.resultado,
+                    'meta_aciertos': session.meta_aciertos,
+                    'razon_derrota': session.razon_derrota,
+                    'velocidad': session.velocidad_esferas,
+                    'cambio_nivel': session.cambio_nivel
+                })
+                
+                # Actualizar resumen del día
+                sesiones_agrupadas[fecha]['resumen']['total_partidas'] += 1
+                if session.resultado == 'victoria':
+                    sesiones_agrupadas[fecha]['resumen']['victorias'] += 1
+                else:
+                    sesiones_agrupadas[fecha]['resumen']['derrotas'] += 1
+                sesiones_agrupadas[fecha]['resumen']['total_aciertos'] += session.esferas_rojas_atrapadas or 0
+            
+            # Calcular precision promedio y convertir a lista
+            sesiones_lista = []
+            for fecha_key in sorted(sesiones_agrupadas.keys(), reverse=True):
+                sesion = sesiones_agrupadas[fecha_key]
+                
+                # Calcular precision promedio del día
+                total_partidas = sesion['resumen']['total_partidas']
+                precision_sum = 0
+                conteo = 0
+                for nivel_data in sesion['niveles'].values():
+                    for partida in nivel_data['partidas']:
+                        if partida['precision'] is not None:
+                            precision_sum += partida['precision']
+                            conteo += 1
+                
+                if conteo > 0:
+                    sesion['resumen']['precision_promedio'] = round(precision_sum / conteo, 2)
+                
+                # Convertir niveles a lista ordenada
+                niveles_lista = []
+                for nivel_key in ['facil', 'intermedio', 'dificil']:
+                    if nivel_key in sesion['niveles']:
+                        niveles_lista.append(sesion['niveles'][nivel_key])
+                
+                sesion['niveles'] = niveles_lista
+                sesiones_lista.append(sesion)
             
             return jsonify({
                 'success': True,
-                'sessions': PaseoSession.to_collection_dict(sessions)
+                'total_sesiones': len(sesiones_lista),
+                'sesiones': sesiones_lista
             }), 200
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             return jsonify({
                 'success': False,
                 'error': str(e)
