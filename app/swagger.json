@@ -23,6 +23,22 @@
     {
       "name": "Abecedario",
       "description": "Juego de formación de palabras con niveles adaptativos"
+    },
+    {
+      "name": "Memory Game",
+      "description": "Juego de memoria con parejas adaptativas"
+    },
+    {
+      "name": "Paseo",
+      "description": "Juego del paseo con niveles progresivos"
+    },
+    {
+      "name": "Train Game",
+      "description": "Juego de trenes con reconocimiento de patrones"
+    },
+    {
+      "name": "Admin",
+      "description": "Endpoints administrativos para consultar estadísticas y sesiones"
     }
   ],
   "paths": {
@@ -115,6 +131,681 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/memory-game/config/{user_id}": {
+      "get": {
+        "tags": ["Memory Game"],
+        "summary": "Obtener configuración del juego de memoria",
+        "description": "Obtiene la configuración actual adaptativa para el usuario",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID del usuario"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Configuración obtenida exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "current_config": {
+                          "type": "object",
+                          "properties": {
+                            "num_pairs": {
+                              "type": "integer",
+                              "description": "Número de parejas en el juego"
+                            },
+                            "time_limit": {
+                              "type": "integer",
+                              "description": "Tiempo límite en segundos"
+                            },
+                            "flip_delay": {
+                              "type": "number",
+                              "description": "Retraso antes de voltear cartas (ms)"
+                            }
+                          }
+                        },
+                        "total_games": {
+                          "type": "integer"
+                        },
+                        "avg_accuracy": {
+                          "type": "number"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/memory-game/submit-results": {
+      "post": {
+        "tags": ["Memory Game"],
+        "summary": "Enviar resultados de partida",
+        "description": "Envía los resultados de una partida y recibe análisis de IA con nueva configuración adaptativa",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["user_id", "session_data"],
+                "properties": {
+                  "user_id": {
+                    "type": "integer"
+                  },
+                  "session_data": {
+                    "type": "object",
+                    "properties": {
+                      "num_pairs": {
+                        "type": "integer"
+                      },
+                      "time_limit": {
+                        "type": "integer"
+                      },
+                      "flip_delay": {
+                        "type": "number"
+                      },
+                      "completed": {
+                        "type": "boolean"
+                      },
+                      "time_taken": {
+                        "type": "number"
+                      },
+                      "attempts": {
+                        "type": "integer"
+                      },
+                      "correct_matches": {
+                        "type": "integer"
+                      },
+                      "failed_attempts": {
+                        "type": "integer"
+                      }
+                    }
+                  }
+                }
+              },
+              "example": {
+                "user_id": 1,
+                "session_data": {
+                  "num_pairs": 6,
+                  "time_limit": 60,
+                  "flip_delay": 1000,
+                  "completed": true,
+                  "time_taken": 45.5,
+                  "attempts": 15,
+                  "correct_matches": 6,
+                  "failed_attempts": 3
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resultados procesados exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "ia_analysis": {
+                          "type": "object"
+                        },
+                        "next_config": {
+                          "type": "object"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/memory-game/stats/{user_id}": {
+      "get": {
+        "tags": ["Memory Game"],
+        "summary": "Obtener estadísticas del usuario",
+        "description": "Obtiene estadísticas históricas del juego de memoria",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Estadísticas obtenidas exitosamente"
+          }
+        }
+      }
+    },
+    "/memory-game/reset/{user_id}": {
+      "delete": {
+        "tags": ["Memory Game"],
+        "summary": "Reiniciar progreso del usuario",
+        "description": "Elimina todas las sesiones y configuraciones del usuario",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Progreso reiniciado exitosamente"
+          }
+        }
+      }
+    },
+    "/paseo/start-session": {
+      "post": {
+        "tags": ["Paseo"],
+        "summary": "Iniciar sesión de juego",
+        "description": "Inicia una nueva sesión de juego del paseo (solo para primera vez)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["user_id"],
+                "properties": {
+                  "user_id": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sesión iniciada exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "plan": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/paseo/get-next-level": {
+      "post": {
+        "tags": ["Paseo"],
+        "summary": "Obtener siguiente nivel",
+        "description": "Obtiene el siguiente nivel basado en el desempeño del usuario",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["user_id"],
+                "properties": {
+                  "user_id": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Nivel obtenido exitosamente"
+          }
+        }
+      }
+    },
+    "/paseo/submit-results": {
+      "post": {
+        "tags": ["Paseo"],
+        "summary": "Enviar resultados de partida",
+        "description": "Envía los resultados de una partida del juego del paseo",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["user_id", "nivel", "aciertos_logrados", "meta_aciertos"],
+                "properties": {
+                  "user_id": {
+                    "type": "integer"
+                  },
+                  "nivel": {
+                    "type": "string",
+                    "enum": ["tutorial", "facil", "intermedio", "avanzado"]
+                  },
+                  "aciertos_logrados": {
+                    "type": "integer"
+                  },
+                  "meta_aciertos": {
+                    "type": "integer"
+                  },
+                  "tiempo_segundos": {
+                    "type": "number"
+                  },
+                  "fallaste": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resultados guardados exitosamente"
+          }
+        }
+      }
+    },
+    "/paseo/get-history/{user_id}": {
+      "get": {
+        "tags": ["Paseo"],
+        "summary": "Obtener historial de sesiones",
+        "description": "Obtiene el historial completo de sesiones del usuario",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Historial obtenido exitosamente"
+          }
+        }
+      }
+    },
+    "/train-game/config/{user_id}": {
+      "get": {
+        "tags": ["Train Game"],
+        "summary": "Obtener configuración del juego de trenes",
+        "description": "Obtiene la configuración actual adaptativa para el usuario",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Configuración obtenida exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "current_config": {
+                          "type": "object",
+                          "properties": {
+                            "secuencia_longitud": {
+                              "type": "integer"
+                            },
+                            "tiempo_limite": {
+                              "type": "integer"
+                            },
+                            "velocidad_animacion": {
+                              "type": "number"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/train-game/submit-results": {
+      "post": {
+        "tags": ["Train Game"],
+        "summary": "Enviar resultados de partida",
+        "description": "Envía los resultados de una partida y recibe análisis de IA",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["user_id", "session_data"],
+                "properties": {
+                  "user_id": {
+                    "type": "integer"
+                  },
+                  "session_data": {
+                    "type": "object",
+                    "properties": {
+                      "secuencia_longitud": {
+                        "type": "integer"
+                      },
+                      "tiempo_limite": {
+                        "type": "integer"
+                      },
+                      "velocidad_animacion": {
+                        "type": "number"
+                      },
+                      "completed": {
+                        "type": "boolean"
+                      },
+                      "correct": {
+                        "type": "boolean"
+                      },
+                      "time_taken": {
+                        "type": "number"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resultados procesados exitosamente"
+          }
+        }
+      }
+    },
+    "/train-game/stats/{user_id}": {
+      "get": {
+        "tags": ["Train Game"],
+        "summary": "Obtener estadísticas del usuario",
+        "description": "Obtiene estadísticas históricas del juego de trenes",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Estadísticas obtenidas exitosamente"
+          }
+        }
+      }
+    },
+    "/admin/stats": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Obtener estadísticas generales",
+        "description": "Obtiene estadísticas agregadas de todos los juegos",
+        "responses": {
+          "200": {
+            "description": "Estadísticas obtenidas exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "stats": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/user-stats/{user_id}": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Obtener estadísticas de un usuario",
+        "description": "Obtiene estadísticas de todos los juegos para un usuario específico",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Estadísticas obtenidas exitosamente"
+          },
+          "404": {
+            "description": "Usuario no encontrado"
+          }
+        }
+      }
+    },
+    "/admin/memory-sessions": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Obtener sesiones de Memory Game",
+        "description": "Obtiene las últimas 20 sesiones del juego de memoria",
+        "responses": {
+          "200": {
+            "description": "Sesiones obtenidas exitosamente"
+          }
+        }
+      }
+    },
+    "/admin/abecedario-sessions": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Obtener sesiones de Abecedario",
+        "description": "Obtiene las últimas 20 sesiones del juego del abecedario",
+        "responses": {
+          "200": {
+            "description": "Sesiones obtenidas exitosamente"
+          }
+        }
+      }
+    },
+    "/admin/paseo-sessions": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Obtener sesiones de Paseo",
+        "description": "Obtiene las últimas 20 sesiones del juego del paseo",
+        "responses": {
+          "200": {
+            "description": "Sesiones obtenidas exitosamente"
+          }
+        }
+      }
+    },
+    "/admin/train-sessions": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Obtener sesiones de Train Game",
+        "description": "Obtiene las últimas 20 sesiones del juego de trenes",
+        "responses": {
+          "200": {
+            "description": "Sesiones obtenidas exitosamente"
+          }
+        }
+      }
+    },
+    "/admin/user-memory-sessions/{user_id}": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Obtener sesiones de Memory Game de un usuario",
+        "description": "Obtiene todas las sesiones de memoria de un usuario específico",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sesiones obtenidas exitosamente"
+          }
+        }
+      }
+    },
+    "/admin/user-abecedario-sessions/{user_id}": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Obtener sesiones de Abecedario de un usuario",
+        "description": "Obtiene todas las sesiones del abecedario de un usuario específico",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sesiones obtenidas exitosamente"
+          }
+        }
+      }
+    },
+    "/admin/user-paseo-sessions/{user_id}": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Obtener sesiones de Paseo de un usuario",
+        "description": "Obtiene todas las sesiones del paseo de un usuario específico",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sesiones obtenidas exitosamente"
+          }
+        }
+      }
+    },
+    "/admin/user-train-sessions/{user_id}": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Obtener sesiones de Train Game de un usuario",
+        "description": "Obtiene todas las sesiones de trenes de un usuario específico",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sesiones obtenidas exitosamente"
+          }
+        }
+      }
+    },
+    "/admin/memory-configs": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Obtener configuraciones de Memory Game",
+        "description": "Obtiene las últimas configuraciones del juego de memoria",
+        "responses": {
+          "200": {
+            "description": "Configuraciones obtenidas exitosamente"
+          }
+        }
+      }
+    },
+    "/admin/train-configs": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Obtener configuraciones de Train Game",
+        "description": "Obtiene las últimas configuraciones del juego de trenes",
+        "responses": {
+          "200": {
+            "description": "Configuraciones obtenidas exitosamente"
           }
         }
       }
