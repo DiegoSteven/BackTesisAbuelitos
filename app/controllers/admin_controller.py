@@ -133,13 +133,41 @@ class AdminController:
                 'nivel_alcanzado': nivel_alcanzado  # Nivel máximo alcanzado
             }
             
-            # Stats de Paseo
-            paseo_sessions = PaseoSession.query.filter_by(user_id=user_id).all()
+            
+            # Stats de Paseo - CORREGIDO: Agrupar por sesiones de juego (por día)
+            paseo_partidas = PaseoSession.query.filter_by(user_id=user_id).all()
+            
+            # Agrupar partidas por fecha (una sesión = un día de juego)
+            sesiones_paseo_por_dia = {}
+            
+            for partida in paseo_partidas:
+                fecha = partida.fecha_juego
+                if fecha not in sesiones_paseo_por_dia:
+                    sesiones_paseo_por_dia[fecha] = {
+                        'partidas_totales': 0,
+                        'victorias': 0,
+                        'precision_sum': 0,
+                        'precision_count': 0
+                    }
+                sesiones_paseo_por_dia[fecha]['partidas_totales'] += 1
+                if partida.resultado == 'victoria':
+                    sesiones_paseo_por_dia[fecha]['victorias'] += 1
+                if partida.precision is not None:
+                    sesiones_paseo_por_dia[fecha]['precision_sum'] += partida.precision
+                    sesiones_paseo_por_dia[fecha]['precision_count'] += 1
+            
+            # Calcular estadísticas
+            total_sesiones_paseo = len(sesiones_paseo_por_dia)  # Una sesión por día
+            victorias_totales = sum([s['victorias'] for s in sesiones_paseo_por_dia.values()])
+            precision_total = sum([s['precision_sum'] for s in sesiones_paseo_por_dia.values()])
+            precision_count_total = sum([s['precision_count'] for s in sesiones_paseo_por_dia.values()])
+            
             paseo_stats = {
-                'total_sesiones': len(paseo_sessions),
-                'victorias': sum([1 for s in paseo_sessions if s.resultado == 'victoria']),
-                'precision_promedio': sum([s.precision or 0 for s in paseo_sessions]) / len(paseo_sessions) if paseo_sessions else 0
+                'total_sesiones': total_sesiones_paseo,  # Sesiones de juego (días jugados)
+                'victorias': victorias_totales,  # Total de victorias
+                'precision_promedio': precision_total / precision_count_total if precision_count_total > 0 else 0  # Promedio de precisión
             }
+
 
             # Stats de Trenes
             train_sessions = TrainGameSession.query.filter_by(user_id=user_id).all()
