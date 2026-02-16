@@ -20,7 +20,14 @@ app = Flask(__name__, static_folder=static_folder, static_url_path='/static')
 if os.environ.get('FLASK_ENV') == 'testing':
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
 else:
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://fazt:fastpassword@localhost:5433/abuelitosBack'
+    # Usar variables de entorno si están disponibles (Docker), sino usar localhost (desarrollo local)
+    db_host = os.environ.get('DB_HOST', 'localhost')
+    db_port = os.environ.get('DB_PORT', '5433')
+    db_user = os.environ.get('DB_USER', 'fazt')
+    db_password = os.environ.get('DB_PASSWORD', 'fastpassword')
+    db_name = os.environ.get('DB_NAME', 'abuelitosBack')
+    
+    app.config['SQLALCHEMY_DATABASE_URI'] = f'postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}'
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 

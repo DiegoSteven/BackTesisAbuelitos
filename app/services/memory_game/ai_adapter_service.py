@@ -27,7 +27,7 @@ class AIAdapterService:
         api_key = os.environ.get('GEMINI_API_KEY')
         if api_key:
             genai.configure(api_key=api_key)
-            self.model = genai.GenerativeModel('gemini-2.0-flash-exp')
+            self.model = genai.GenerativeModel('Gemini 2.5 Flash')
             logger.info("✅ Gemini AI configurado correctamente")
         else:
             logger.warning("⚠️ GEMINI_API_KEY no encontrada. Usando modo fallback.")

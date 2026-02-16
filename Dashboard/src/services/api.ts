@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const API_BASE = '';  // Empty because Vite proxy will handle routing
+// En desarrollo, Vite proxy maneja el routing (baseURL vacío)
+// En producción, usa la variable de entorno o el proxy de Nginx
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 const api = axios.create({
     baseURL: API_BASE,
