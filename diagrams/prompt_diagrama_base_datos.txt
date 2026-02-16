@@ -1,0 +1,88 @@
+Create a professional Entity-Relationship Diagram (ERD) for a PostgreSQL database. The design should be clean, flat, and use a white background.
+
+**1. Layout:**
+- **Central Entity:** "User" table in the center.
+- **Surrounding Entities:** Game-specific tables radiating from the User table.
+- **Grouping:** Group tables by game context (e.g., Memory Game tables together, Train Game tables together).
+
+**2. Tables & Columns (Detailed):**
+
+*   **Table: User (Central)**
+    *   *PK* `id` (Integer)
+    *   `nombre` (String)
+    *   `edad` (Integer)
+    *   `genero` (String)
+    *   `password` (String)
+
+*   **Group: Memory Game**
+    *   **Table: MemoryGameSession**
+        *   *PK* `session_id`
+        *   *FK* `user_id`
+        *   `difficulty_level` (String)
+        *   `total_pairs` (Int)
+        *   `accuracy_percentage` (Float)
+        *   `elapsed_time_seconds` (Float)
+        *   `ai_adjustment_decision` (String)
+        *   `ai_reason` (String)
+    *   **Table: MemoryGameConfig**
+        *   *PK* `config_id`
+        *   *FK* `user_id`
+        *   `difficulty_label` (String)
+        *   `grid_size` (String)
+        *   `time_limit` (Int)
+
+*   **Group: Train Game**
+    *   **Table: TrainGameSession**
+        *   *PK* `session_id`
+        *   *FK* `user_id`
+        *   `train_speed` (Float)
+        *   `spawn_rate` (Float)
+        *   `correct_routing` (Int)
+        *   `wrong_routing` (Int)
+    *   **Table: TrainGameConfig**
+        *   *PK* `config_id`
+        *   *FK* `user_id`
+        *   `difficulty_label` (String)
+        *   `train_speed` (Float)
+        *   `total_trains` (Int)
+
+*   **Group: Abecedario Game**
+    *   **Table: Abecedario (Session)**
+        *   *PK* `id`
+        *   *FK* `user_id`
+        *   `palabra_objetivo` (String)
+        *   `tiempo_resolucion` (Float)
+        *   `cantidad_errores` (Int)
+        *   `pistas_usadas` (Int)
+        *   `nivel_jugado` (String)
+
+*   **Group: Paseo Game**
+    *   **Table: PaseoSession**
+        *   *PK* `id`
+        *   *FK* `user_id`
+        *   `nivel_dificultad` (String)
+        *   `esferas_rojas_atrapadas` (Int)
+        *   `esferas_azules_atrapadas` (Int)
+        *   `precision` (Float)
+        *   `resultado` (String)
+        *   `recomendacion_siguiente` (String)
+
+**3. Relationships (Connectors):**
+- **One-to-Many:** From **User** to all **Session** tables (User has many Sessions).
+    - Line style: Solid line with "crow's foot" notation at the Session end.
+- **One-to-One:** From **User** to **Config** tables (User has one Config).
+    - Line style: Solid line with single bar notation at both ends.
+
+**4. Styling:**
+- **Headers:** Colored headers for each table box to distinguish groups:
+    - **User:** Dark Blue.
+    - **Memory Game:** Green.
+    - **Train Game:** Orange.
+    - **Abecedario:** Purple.
+    - **Paseo:** Teal/Cyan.
+- **Background:** Pure White.
+- **Text:** Clear, readable sans-serif font.
+- **Icons:** Small key icon for PKs.
+
+**5. Legend:**
+- Include a small legend explaining PK (Primary Key) and FK (Foreign Key).

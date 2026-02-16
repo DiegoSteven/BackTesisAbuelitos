@@ -1,0 +1,53 @@
+Create a professional UML State Machine Diagram for the "Memory Game" session lifecycle. The design should be clean, using a white background and standard UML 2.0 notation.
+
+**1. Context:**
+This diagram represents the states of a single game session, from initialization to completion and analysis.
+
+**2. States:**
+
+*   **Initial State** (Black circle).
+*   **State:** `Initializing`
+    *   *Entry:* Load Config (Grid, Time).
+*   **State:** `MemorizationPhase`
+    *   *Description:* Cards are visible to the user.
+    *   *Exit:* Timer Expired.
+*   **State:** `GameplayPhase` (Composite State)
+    *   *Internal States:*
+        *   `Idle`: Waiting for input.
+        *   `OneCardFlipped`: First card selected.
+        *   `CheckingMatch`: Second card selected (Animation/Validation).
+    *   *Transitions:*
+        *   `Idle` -> `OneCardFlipped` (Select Card).
+        *   `OneCardFlipped` -> `CheckingMatch` (Select 2nd Card).
+        *   `CheckingMatch` -> `Idle` (Match Found or Mismatch).
+*   **State:** `Finished`
+    *   *Entry:* Calculate Score.
+*   **State:** `Analyzing`
+    *   *Description:* Communicating with Backend/AI.
+*   **State:** `ResultsView`
+    *   *Entry:* Show Feedback & Next Level.
+*   **Final State** (Black circle with border).
+
+**3. Transitions (Arrows with Triggers):**
+
+*   Start -> `Initializing`.
+*   `Initializing` -> `MemorizationPhase` [Config Loaded].
+*   `MemorizationPhase` -> `GameplayPhase` [Time Limit Reached].
+*   `GameplayPhase` -> `Finished` [All Pairs Found (Win)].
+*   `GameplayPhase` -> `Finished` [Session Time Limit Reached (Loss)].
+*   `Finished` -> `Analyzing` [Submit Results].
+*   `Analyzing` -> `ResultsView` [AI Response Received].
+*   `ResultsView` -> `Initializing` [Replay/Next Level].
+*   `ResultsView` -> Final State [Exit].
+
+**4. Styling & Notation:**
+*   **States:** Rounded rectangles with the state name in bold.
+*   **Composite State:** A larger box (`GameplayPhase`) containing the internal states.
+*   **Transitions:** Solid arrows with text labels for triggers/guards (e.g., `[Time Up]`).
+*   **Colors:**
+    *   Normal States: Light Blue.
+    *   Composite State Background: Very Light Gray/White.
+    *   Start/End: Black.
+
+**5. Legend:**
+*   Include a small legend for State, Transition, and Composite State.

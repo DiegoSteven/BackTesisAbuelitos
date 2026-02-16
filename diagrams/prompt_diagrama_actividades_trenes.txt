@@ -1,0 +1,52 @@
+Create a professional UML Activity Diagram for the "Train Switching Game" logic flow. The design should be clean, using a white background and standard UML 2.0 notation.
+
+**1. Swimlanes (Partitions):**
+Divide the diagram into 3 vertical swimlanes to show responsibility:
+*   **Left:** `User (Adulto Mayor)`
+*   **Center:** `Frontend (Unity)`
+*   **Right:** `Backend (System & AI)`
+
+**2. Activity Flow:**
+
+*   **Start Node** (Black circle) in `User` lane.
+*   **Activity:** "Select Train Game" (`User`).
+*   **Activity:** "Request Config" (`Frontend`).
+*   **Activity:** "Retrieve Difficulty (Speed/Colors)" (`Backend`).
+    *   *Decision Diamond:* "New User?"
+        *   *Yes:* "Set Default (Slow Speed, 3 Colors)".
+        *   *No:* "Load Adaptive Config".
+*   **Activity:** "Setup Tracks & Stations" (`Frontend`).
+*   **Activity:** "Start Spawning Trains" (`Frontend`).
+    *   *Parallel Fork (Bar):*
+        *   **Flow A:** "Move Trains (Speed X)" (`Frontend`).
+        *   **Flow B:** "Wait for Input" (`User`).
+*   **Activity:** "Switch Track (Click/Tap)" (`User`).
+*   **Activity:** "Validate Route" (`Frontend`).
+    *   *Decision Diamond:* "Correct Station?"
+        *   *Yes:* "Score Points & Visual Feedback".
+        *   *No:* "Record Error & Visual Alert".
+*   **Activity:** "Check Session End" (`Frontend`).
+    *   *Loop:* If time remaining & trains left -> Continue Spawning.
+*   **Activity:** "Submit Metrics" (`Frontend`).
+*   **Activity:** "Analyze Performance" (`Backend`).
+    *   *Decision Diamond:* "Accuracy Level?"
+        *   *High (>85%):* -> **Activity:** "Increase Speed/Spawn Rate".
+        *   *Low (<50%):* -> **Activity:** "Decrease Speed".
+        *   *Ambiguous (50-85%):* -> **Activity:** "Consult Gemini AI".
+*   **Activity:** "Update Adaptive Config" (`Backend`).
+*   **Activity:** "Show Results" (`Frontend`).
+*   **End Node** (Black circle with border).
+
+**3. Styling & Notation:**
+*   **Nodes:** Rounded rectangles for activities.
+*   **Decisions:** Diamonds for branching logic.
+*   **Fork/Join:** Thick horizontal bars for parallel processes (Train movement vs User Input).
+*   **Connectors:** Solid arrows showing the flow direction.
+*   **Colors:**
+    *   User Activities: Light Blue.
+    *   Frontend Activities: Light Orange.
+    *   Backend Activities: Light Green.
+    *   Decision Diamonds: Yellow.
+
+**4. Legend:**
+*   Include a small legend identifying the Swimlanes and Activity types.

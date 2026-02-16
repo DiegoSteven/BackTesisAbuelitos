@@ -1,0 +1,47 @@
+Create a professional UML Activity Diagram for the "Memory Game" logic flow. The design should be clean, using a white background and standard UML 2.0 notation.
+
+**1. Swimlanes (Partitions):**
+Divide the diagram into 3 vertical swimlanes to show responsibility:
+*   **Left:** `User (Adulto Mayor)`
+*   **Center:** `Frontend (Unity)`
+*   **Right:** `Backend (System & AI)`
+
+**2. Activity Flow:**
+
+*   **Start Node** (Black circle) in `User` lane.
+*   **Activity:** "Select Memory Game" (`User`).
+*   **Activity:** "Request Configuration" (`Frontend`).
+*   **Activity:** "Retrieve Difficulty Level" (`Backend`).
+    *   *Decision Diamond:* "Is First Time?"
+        *   *Yes:* "Create Default Config (Tutorial)".
+        *   *No:* "Load Existing Config".
+*   **Activity:** "Generate Board (Grid & Cards)" (`Frontend`).
+*   **Activity:** "Show Cards Face Up (Memorization)" (`Frontend`).
+    *   *Timer Event:* "Wait X seconds".
+*   **Activity:** "Hide Cards" (`Frontend`).
+*   **Activity:** "Play Game (Find Pairs)" (`User`).
+    *   *Loop:* Until all pairs found or time runs out.
+*   **Activity:** "Submit Results (Metrics)" (`Frontend`).
+*   **Activity:** "Analyze Performance" (`Backend`).
+    *   *Decision Diamond:* "Game Status?"
+        *   *Timeout (Loss):* -> **Activity:** "Decrease/Maintain Difficulty (Easier)".
+        *   *Completed (Win):* -> **Activity:** "Consult AI for Adjustment".
+            *   *Sub-Activity:* "Analyze Speed & Accuracy".
+            *   *Decision:* "Increase, Decrease, or Maintain?".
+*   **Activity:** "Update Configuration" (`Backend`).
+*   **Activity:** "Show Results & Feedback" (`Frontend`).
+*   **End Node** (Black circle with border).
+
+**3. Styling & Notation:**
+*   **Nodes:** Rounded rectangles for activities.
+*   **Decisions:** Diamonds for branching logic.
+*   **Start/End:** Standard UML filled circles.
+*   **Connectors:** Solid arrows showing the flow direction.
+*   **Colors:**
+    *   User Activities: Light Blue.
+    *   Frontend Activities: Light Orange.
+    *   Backend Activities: Light Green.
+    *   Decision Diamonds: Yellow.
+
+**4. Legend:**
+*   Include a small legend identifying the Swimlanes and Activity types.

@@ -1,0 +1,56 @@
+Create a professional UML Sequence Diagram for the "Paseo (Visuospatial) Game" flow. The design should be clean, using a white background and standard UML 2.0 notation.
+
+**1. Participants (Lifelines):**
+*   **Actor:** `User (Adulto Mayor)`
+*   **Boundary:** `Unity UI (Frontend)`
+*   **Control:** `PaseoController (API)`
+*   **Entity:** `PaseoService (Logic)`
+*   **Entity:** `GeminiPaseoService (AI Wrapper)`
+*   **Database:** `PostgreSQL (DB)`
+*   **External:** `Gemini AI (Google API)`
+
+**2. Sequence Flow:**
+
+**Phase 1: Initialization**
+1.  `User` -> `Unity UI`: Selects Paseo Game.
+2.  `Unity UI` -> `PaseoController`: `POST /start-session` (Request Config).
+3.  `PaseoController` -> `GeminiPaseoService`: `decidir_nivel_inicial()`.
+4.  `GeminiPaseoService` -> `PaseoService`: `get_ultima_sesion()`.
+5.  `PaseoService` --> `GeminiPaseoService`: Return Last Result (Win/Loss).
+6.  **Alt Fragment (Decision Logic):**
+    *   **[Win/Loss Easy/Medium]:**
+        *   `GeminiPaseoService` -> `GeminiPaseoService`: Apply Deterministic Rules (Up/Down).
+    *   **[Loss Hard]:**
+        *   `GeminiPaseoService` -> `Gemini AI`: Analyze Failure (Metrics).
+        *   `Gemini AI` --> `GeminiPaseoService`: Return Adjustment (Speed/Level).
+7.  `GeminiPaseoService` -> `GeminiPaseoService`: `_plan_nivel_sin_ia()` (Build Config).
+8.  `GeminiPaseoService` --> `PaseoController`: Return Config (Speed, Colors, Meta).
+9.  `PaseoController` --> `Unity UI`: JSON Config.
+10. `Unity UI` -> `User`: Display Instructions ("Catch Red Spheres").
+
+**Phase 2: Gameplay (Internal)**
+*   `Unity UI` spawns spheres.
+*   `User` taps spheres.
+*   `Unity UI` tracks hits/misses/errors.
+
+**Phase 3: Submission**
+11. `User` -> `Unity UI`: Session Ends (Time/Meta).
+12. `Unity UI` -> `PaseoController`: `POST /save-session` (Metrics).
+13. `PaseoController` -> `PaseoService`: `save_session()`.
+14. `PaseoService` -> `PostgreSQL`: Save `PaseoSession`.
+15. `PaseoService` --> `PaseoController`: Return Success.
+16. `PaseoController` --> `Unity UI`: JSON Response.
+17. `Unity UI` -> `User`: Show Results Screen.
+
+**3. Styling & Notation:**
+*   **Lifelines:** Vertical dashed lines.
+*   **Activation Bars:** Show active processing time.
+*   **Fragments:** Use `alt` for the Hybrid Logic (Deterministic vs AI Analysis).
+*   **Colors:**
+    *   User/Unity: Light Blue.
+    *   Backend: Light Green.
+    *   AI Service: Light Purple.
+    *   DB: Light Yellow.
+
+**4. Legend:**
+*   Include a small legend for participants and fragments.

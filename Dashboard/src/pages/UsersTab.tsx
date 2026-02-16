@@ -8,6 +8,7 @@ import {
     getUserTrainSessions
 } from '../services/api';
 import api from '../services/api';
+import CreateUserForm from '../components/CreateUserForm';
 
 interface User {
     id: number;
@@ -17,10 +18,37 @@ interface User {
 }
 
 interface UserStats {
-    memoria: { total_sesiones: number; promedio_accuracy: number; sesiones_completadas: number };
-    abecedario: { total_sesiones: number; palabras_completadas: number; tiempo_promedio: number; nivel_alcanzado: string };
-    paseo: { total_sesiones: number; victorias: number; precision_promedio: number };
-    trenes: { total_sesiones: number; total_aciertos: number; precision_promedio: number };
+    memoria: {
+        total_sesiones: number;
+        promedio_accuracy: number;
+        sesiones_completadas: number;
+        tiempo_promedio?: number;
+        tiempo_total?: number;
+        nivel_maximo?: string;
+    };
+    abecedario: {
+        total_sesiones: number;
+        palabras_completadas: number;
+        tiempo_promedio: number;
+        tiempo_total?: number;
+        nivel_alcanzado: string;
+    };
+    paseo: {
+        total_sesiones: number;
+        victorias: number;
+        precision_promedio: number;
+        tiempo_promedio?: number;
+        tiempo_total?: number;
+        nivel_maximo?: string;
+    };
+    trenes: {
+        total_sesiones: number;
+        total_aciertos: number;
+        precision_promedio: number;
+        tiempo_promedio?: number;
+        tiempo_total?: number;
+        nivel_maximo?: string;
+    };
 }
 
 // Helper functions from MemoryGameTab
@@ -44,6 +72,22 @@ const formatDecision = (decision?: string) => {
     return <span style={{ color: '#ffd93d', fontSize: '1.2em', fontWeight: 'bold' }}>═ Mantener</span>;
 };
 
+// Translate level names from English to Spanish
+const translateLevel = (level?: string): string => {
+    if (!level) return 'N/A';
+    const translations: Record<string, string> = {
+        'tutorial': 'TUTORIAL',
+        'easy': 'FÁCIL',
+        'medium': 'MEDIO',
+        'hard': 'DIFÍCIL',
+        'facil': 'FÁCIL',
+        'intermedio': 'INTERMEDIO',
+        'dificil': 'DIFÍCIL',
+        'n/a': 'N/A'
+    };
+    return translations[level.toLowerCase()] || level.toUpperCase();
+};
+
 const UsersTab = () => {
     const [selectedUser, setSelectedUser] = useState<number | null>(null);
     const [selectedGame, setSelectedGame] = useState<string | null>(null);
@@ -51,6 +95,7 @@ const UsersTab = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [expandedSessions, setExpandedSessions] = useState<Set<string>>(new Set());
     const [expandedLevels, setExpandedLevels] = useState<Set<string>>(new Set());
+    const [isCreatingUser, setIsCreatingUser] = useState(false);
 
     // Fetch Users
     const { data: usersData, isLoading: usersLoading } = useQuery({
@@ -79,19 +124,22 @@ const UsersTab = () => {
             if (!selectedUser || !selectedGame) return [];
             let res;
             switch (selectedGame) {
-                case 'memoria': res = await getUserMemorySessions(selectedUser); break;
-                case 'abecedario': 
+                case 'memoria':
+                    res = await getUserMemorySessions(selectedUser);
+                    // Ahora devuelve 'sesiones' agrupadas
+                    return res.data.sesiones || [];
+                case 'abecedario':
                     res = await getUserAbecedarioSessions(selectedUser);
-                    // El backend devuelve 'sesiones' para Abecedario, no 'sessions'
                     return res.data.sesiones || [];
-                case 'paseo': 
+                case 'paseo':
                     res = await getUserPaseoSessions(selectedUser);
-                    // El backend ahora devuelve 'sesiones' agrupadas, no 'sessions'
                     return res.data.sesiones || [];
-                case 'trenes': res = await getUserTrainSessions(selectedUser); break;
+                case 'trenes':
+                    res = await getUserTrainSessions(selectedUser);
+                    // Ahora devuelve 'sesiones' agrupadas
+                    return res.data.sesiones || [];
                 default: return [];
             }
-            return res.data.sessions;
         },
         enabled: !!selectedUser && !!selectedGame,
     });
@@ -105,7 +153,9 @@ const UsersTab = () => {
     const handleUserSelect = (id: number) => {
         setSelectedUser(id);
         setSelectedGame(null);
+        setIsCreatingUser(false);
     };
+
 
     const GameSummaryCard = ({ title, icon, stats, color, id }: { title: string, icon: any, stats: { label: string, value: string | number }[], color: string, id: string }) => {
         const [isHovered, setIsHovered] = useState(false);
@@ -199,7 +249,34 @@ const UsersTab = () => {
                     alignItems: 'center',
                     borderBottom: isSidebarOpen ? '1px solid #2c2e33' : 'none'
                 }}>
-                    {isSidebarOpen && <h3 style={{ margin: 0, whiteSpace: 'nowrap' }}>👥 Usuarios ({users.length})</h3>}
+                    {isSidebarOpen && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <h3 style={{ margin: 0, whiteSpace: 'nowrap' }}>👥 Usuarios ({users.length})</h3>
+                            <button
+                                onClick={() => {
+                                    setIsCreatingUser(true);
+                                    setSelectedUser(null);
+                                }}
+                                title="Registrar nuevo usuario"
+                                style={{
+                                    background: '#51cf66',
+                                    border: 'none',
+                                    borderRadius: '50%',
+                                    width: '24px',
+                                    height: '24px',
+                                    color: '#fff',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '1.2em',
+                                    boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+                                }}
+                            >
+                                +
+                            </button>
+                        </div>
+                    )}
                     <button
                         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                         style={{
@@ -212,7 +289,7 @@ const UsersTab = () => {
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            width: '100%'
+                            width: isSidebarOpen ? 'auto' : '100%'
                         }}
                     >
                         {isSidebarOpen ? '◀' : '▶'}
@@ -277,7 +354,15 @@ const UsersTab = () => {
 
             {/* Main Content Area */}
             <div className="user-details" style={{ overflowY: 'auto', paddingRight: '10px' }}>
-                {!selectedUser ? (
+                {isCreatingUser ? (
+                    <CreateUserForm
+                        onSuccess={(newId) => {
+                            setIsCreatingUser(false);
+                            if (newId) setSelectedUser(newId);
+                        }}
+                        onCancel={() => setIsCreatingUser(false)}
+                    />
+                ) : !selectedUser ? (
                     <div style={{
                         display: 'flex',
                         flexDirection: 'column',
@@ -320,9 +405,10 @@ const UsersTab = () => {
                                 icon="🧠"
                                 color="#51cf66"
                                 stats={[
-                                    { label: 'Total Sesiones', value: userStatsData.memoria.total_sesiones },
-                                    { label: 'Accuracy Promedio', value: `${userStatsData.memoria.promedio_accuracy.toFixed(1)}%` },
-                                    { label: 'Completadas', value: userStatsData.memoria.sesiones_completadas }
+                                    { label: 'Sesiones', value: userStatsData.memoria.total_sesiones },
+                                    { label: 'Accuracy', value: `${userStatsData.memoria.promedio_accuracy.toFixed(1)}%` },
+                                    { label: 'Tiempo Prom.', value: `${(userStatsData.memoria.tiempo_promedio || 0).toFixed(1)}s` },
+                                    { label: 'Nivel Max', value: translateLevel(userStatsData.memoria.nivel_maximo) }
                                 ]}
                             />
                             <GameSummaryCard
@@ -331,10 +417,10 @@ const UsersTab = () => {
                                 icon="🔤"
                                 color="#339af0"
                                 stats={[
-                                    { label: 'Total Sesiones', value: userStatsData.abecedario.total_sesiones },
-                                    { label: 'Palabras Completadas', value: userStatsData.abecedario.palabras_completadas },
-                                    { label: 'Tiempo Promedio', value: `${userStatsData.abecedario.tiempo_promedio.toFixed(1)}s` },
-                                    { label: 'Nivel Alcanzado', value: userStatsData.abecedario.nivel_alcanzado.toUpperCase() }
+                                    { label: 'Sesiones', value: userStatsData.abecedario.total_sesiones },
+                                    { label: 'Completadas', value: userStatsData.abecedario.palabras_completadas },
+                                    { label: 'Tiempo Prom.', value: `${userStatsData.abecedario.tiempo_promedio.toFixed(1)}s` },
+                                    { label: 'Nivel Max', value: translateLevel(userStatsData.abecedario.nivel_alcanzado) }
                                 ]}
                             />
                             <GameSummaryCard
@@ -343,9 +429,11 @@ const UsersTab = () => {
                                 icon="🚂"
                                 color="#ff6b6b"
                                 stats={[
-                                    { label: 'Total Sesiones', value: userStatsData.trenes.total_sesiones },
-                                    { label: 'Aciertos Total', value: userStatsData.trenes.total_aciertos },
-                                    { label: 'Precisión', value: `${userStatsData.trenes.precision_promedio.toFixed(1)}%` }
+                                    { label: 'Sesiones', value: userStatsData.trenes.total_sesiones },
+                                    { label: 'Aciertos', value: userStatsData.trenes.total_aciertos },
+                                    { label: 'Precisión', value: `${userStatsData.trenes.precision_promedio.toFixed(1)}%` },
+                                    { label: 'Tiempo Prom.', value: `${(userStatsData.trenes.tiempo_promedio || 0).toFixed(1)}s` },
+                                    { label: 'Nivel Max', value: translateLevel(userStatsData.trenes.nivel_maximo) }
                                 ]}
                             />
                             <GameSummaryCard
@@ -354,39 +442,65 @@ const UsersTab = () => {
                                 icon="🚶"
                                 color="#fcc419"
                                 stats={[
-                                    { label: 'Total Sesiones', value: userStatsData.paseo.total_sesiones },
+                                    { label: 'Sesiones', value: userStatsData.paseo.total_sesiones },
                                     { label: 'Victorias', value: userStatsData.paseo.victorias },
-                                    { label: 'Precisión Promedio', value: `${userStatsData.paseo.precision_promedio.toFixed(1)}%` }
+                                    { label: 'Precisión', value: `${userStatsData.paseo.precision_promedio.toFixed(1)}%` },
+                                    { label: 'Tiempo Prom.', value: `${(userStatsData.paseo.tiempo_promedio || 0).toFixed(1)}s` },
+                                    { label: 'Nivel Max', value: translateLevel(userStatsData.paseo.nivel_maximo) }
                                 ]}
                             />
                         </div>
 
                         {/* Detailed Session View */}
-                        {selectedGame && (
-                            <div className="game-details-section fade-in" style={{ background: '#151722', padding: '20px', borderRadius: '15px', marginBottom: '30px' }}>
-                                <h3 style={{
-                                    color: selectedGame === 'memoria' ? '#51cf66' :
-                                        selectedGame === 'abecedario' ? '#339af0' :
-                                            selectedGame === 'paseo' ? '#fcc419' : '#ff6b6b',
-                                    borderBottom: '1px solid #333',
-                                    paddingBottom: '15px',
-                                    marginBottom: '20px',
-                                    textTransform: 'capitalize'
-                                }}>
-                                    Historial de Sesiones: {selectedGame}
-                                </h3>
+                        {
+                            selectedGame && (
+                                <div className="game-details-section fade-in" style={{ background: '#151722', padding: '20px', borderRadius: '15px', marginBottom: '30px' }}>
+                                    <h3 style={{
+                                        color: selectedGame === 'memoria' ? '#51cf66' :
+                                            selectedGame === 'abecedario' ? '#339af0' :
+                                                selectedGame === 'paseo' ? '#fcc419' : '#ff6b6b',
+                                        borderBottom: '1px solid #333',
+                                        paddingBottom: '15px',
+                                        marginBottom: '20px',
+                                        textTransform: 'capitalize'
+                                    }}>
+                                        Historial de Sesiones: {selectedGame}
+                                    </h3>
 
-                                {sessionsLoading ? (
-                                    <div className="loading">Cargando sesiones...</div>
-                                ) : gameSessions && gameSessions.length > 0 ? (
-                                    selectedGame === 'abecedario' || selectedGame === 'paseo' ? (
-                                        // Vista jerárquica para Abecedario y Paseo: Sesión -> Niveles -> Palabras/Partidas
+                                    {sessionsLoading ? (
+                                        <div className="loading">Cargando sesiones...</div>
+                                    ) : gameSessions && gameSessions.length > 0 ? (
+                                        // Vista jerárquica para TODOS los juegos: Sesión -> Niveles -> Partidas
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                                             {gameSessions.map((sesion: any) => {
                                                 const sesionKey = sesion.fecha;
                                                 const isSessionExpanded = expandedSessions.has(sesionKey);
-                                                const isPaseo = selectedGame === 'paseo';
-                                                
+
+                                                // Determinar colores según el juego
+                                                const gameColors: Record<string, string> = {
+                                                    memoria: '#51cf66',
+                                                    abecedario: '#339af0',
+                                                    paseo: '#fcc419',
+                                                    trenes: '#ff6b6b'
+                                                };
+                                                const gameColor = gameColors[selectedGame || 'memoria'];
+
+                                                // Obtener resumen según el juego
+                                                const getResumenText = () => {
+                                                    switch (selectedGame) {
+                                                        case 'memoria':
+                                                            return `${sesion.resumen.total_partidas} partidas • ${sesion.resumen.completadas} completadas • ${sesion.resumen.accuracy_promedio?.toFixed(1)}% accuracy`;
+                                                        case 'abecedario':
+                                                            return `${sesion.resumen.total_palabras} palabras • ${sesion.resumen.palabras_completadas} completadas • ${sesion.resumen.tiempo_total?.toFixed(1)}s total`;
+                                                        case 'paseo':
+                                                            return `${sesion.resumen.total_partidas} partidas • ${sesion.resumen.victorias} victorias • ${sesion.resumen.precision_promedio?.toFixed(1)}% precisión`;
+                                                        case 'trenes':
+                                                            return `${sesion.resumen.total_partidas} partidas • ${sesion.resumen.total_aciertos} aciertos • ${sesion.resumen.precision_promedio?.toFixed(1)}% precisión`;
+                                                        default:
+                                                            return '';
+                                                    }
+                                                };
+
                                                 return (
                                                     <div key={sesionKey} style={{
                                                         background: '#1a1d2e',
@@ -408,8 +522,8 @@ const UsersTab = () => {
                                                             style={{
                                                                 padding: '20px',
                                                                 cursor: 'pointer',
-                                                                background: isSessionExpanded ? `linear-gradient(90deg, ${isPaseo ? 'rgba(252, 196, 25, 0.1)' : 'rgba(51, 154, 240, 0.1)'} 0%, transparent 100%)` : 'transparent',
-                                                                borderLeft: isSessionExpanded ? `4px solid ${isPaseo ? '#fcc419' : '#339af0'}` : '4px solid transparent',
+                                                                background: isSessionExpanded ? `linear-gradient(90deg, ${gameColor}15 0%, transparent 100%)` : 'transparent',
+                                                                borderLeft: isSessionExpanded ? `4px solid ${gameColor}` : '4px solid transparent',
                                                                 display: 'flex',
                                                                 justifyContent: 'space-between',
                                                                 alignItems: 'center',
@@ -421,44 +535,33 @@ const UsersTab = () => {
                                                                     {isSessionExpanded ? '▼' : '▶'}
                                                                 </div>
                                                                 <div>
-                                                                    <div style={{ fontWeight: 'bold', fontSize: '1.2em', color: isPaseo ? '#fcc419' : '#339af0' }}>
+                                                                    <div style={{ fontWeight: 'bold', fontSize: '1.2em', color: gameColor }}>
                                                                         📅 Sesión: {sesion.fecha}
                                                                     </div>
                                                                     <div style={{ fontSize: '0.9em', color: '#888', marginTop: '5px' }}>
-                                                                        {isPaseo ? (
-                                                                            <>
-                                                                                {sesion.resumen.total_partidas} partidas • {sesion.resumen.victorias} victorias • {sesion.resumen.derrotas} derrotas • {sesion.resumen.precision_promedio.toFixed(1)}% precisión
-                                                                            </>
-                                                                        ) : (
-                                                                            <>
-                                                                                {sesion.resumen.total_palabras} palabras • {sesion.resumen.palabras_completadas} completadas • {sesion.resumen.tiempo_total.toFixed(1)}s total
-                                                                            </>
-                                                                        )}
+                                                                        {getResumenText()}
                                                                     </div>
                                                                 </div>
                                                             </div>
                                                             <div style={{
                                                                 padding: '8px 15px',
-                                                                background: isPaseo ? 'rgba(252, 196, 25, 0.2)' : 'rgba(51, 154, 240, 0.2)',
+                                                                background: `${gameColor}20`,
                                                                 borderRadius: '20px',
                                                                 fontSize: '0.9em',
-                                                                color: isPaseo ? '#fcc419' : '#339af0'
+                                                                color: gameColor
                                                             }}>
-                                                                {isPaseo ? (
-                                                                    <>🎯 {sesion.resumen.total_aciertos} aciertos</>
-                                                                ) : (
-                                                                    <>{((sesion.resumen.palabras_completadas / sesion.resumen.total_palabras) * 100).toFixed(0)}% completado</>
-                                                                )}
+                                                                {sesion.niveles.length} nivel{sesion.niveles.length !== 1 ? 'es' : ''}
                                                             </div>
                                                         </div>
-                                                        
+
                                                         {/* Niveles (colapsable) */}
                                                         {isSessionExpanded && (
                                                             <div style={{ padding: '10px 20px 20px 60px' }}>
                                                                 {sesion.niveles.map((nivel: any) => {
                                                                     const levelKey = `${sesionKey}-${nivel.nivel}`;
                                                                     const isLevelExpanded = expandedLevels.has(levelKey);
-                                                                    
+                                                                    const items = nivel.partidas || nivel.palabras || [];
+
                                                                     return (
                                                                         <div key={levelKey} style={{
                                                                             marginBottom: '10px',
@@ -491,8 +594,8 @@ const UsersTab = () => {
                                                                                         {isLevelExpanded ? '▼' : '▶'}
                                                                                     </div>
                                                                                     <span className="badge" style={{
-                                                                                        background: nivel.nivel === 'dificil' ? '#ff6b6b' :
-                                                                                                   nivel.nivel === 'intermedio' ? '#ffd93d' : '#51cf66',
+                                                                                        background: nivel.nivel.includes('dificil') || nivel.nivel.includes('hard') ? '#ff6b6b' :
+                                                                                            nivel.nivel.includes('intermedio') || nivel.nivel.includes('medium') ? '#ffd93d' : '#51cf66',
                                                                                         padding: '5px 12px',
                                                                                         borderRadius: '5px',
                                                                                         fontWeight: 'bold',
@@ -501,36 +604,43 @@ const UsersTab = () => {
                                                                                         {nivel.nivel.toUpperCase()}
                                                                                     </span>
                                                                                     <span style={{ color: '#aaa' }}>
-                                                                                        {isPaseo ? (
-                                                                                            <>{nivel.partidas.length} partida{nivel.partidas.length !== 1 ? 's' : ''}</>
-                                                                                        ) : (
-                                                                                            <>{nivel.palabras.length} palabra{nivel.palabras.length !== 1 ? 's' : ''}</>
-                                                                                        )}
+                                                                                        {items.length} {selectedGame === 'abecedario' ? 'palabra' : 'partida'}{items.length !== 1 ? 's' : ''}
                                                                                     </span>
                                                                                 </div>
-                                                                                <div style={{ 
-                                                                                    fontSize: '0.95em', 
-                                                                                    color: isPaseo ? '#fcc419' : '#339af0',
-                                                                                    fontWeight: '600',
-                                                                                    padding: '5px 12px',
-                                                                                    background: isPaseo ? 'rgba(252, 196, 25, 0.15)' : 'rgba(51, 154, 240, 0.15)',
-                                                                                    borderRadius: '8px'
-                                                                                }}>
-                                                                                    {isPaseo ? (
-                                                                                        <>⏱️ {nivel.partidas.reduce((sum: number, p: any) => sum + (p.duracion || 0), 0).toFixed(1)}s</>
-                                                                                    ) : (
-                                                                                        <>⏱️ {nivel.palabras.reduce((sum: number, p: any) => sum + p.tiempo, 0).toFixed(1)}s</>
-                                                                                    )}
-                                                                                </div>
                                                                             </div>
-                                                                            
+
                                                                             {/* Detalles del nivel */}
                                                                             {isLevelExpanded && (
                                                                                 <div style={{ padding: '0 15px 15px 45px' }}>
                                                                                     <table style={{ width: '100%', fontSize: '0.9em' }}>
                                                                                         <thead>
                                                                                             <tr style={{ borderBottom: '1px solid #2c2e33' }}>
-                                                                                                {isPaseo ? (
+                                                                                                {selectedGame === 'memoria' && (
+                                                                                                    <>
+                                                                                                        <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>ID</th>
+                                                                                                        <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>Hora</th>
+                                                                                                        <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>Grid</th>
+                                                                                                        <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>Accuracy</th>
+                                                                                                        <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>Duración</th>
+                                                                                                        <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>Estado</th>
+                                                                                                        <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>IA Score</th>
+                                                                                                        <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>Decisión</th>
+                                                                                                        <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>Métricas</th>
+                                                                                                    </>
+                                                                                                )}
+                                                                                                {selectedGame === 'trenes' && (
+                                                                                                    <>
+                                                                                                        <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>ID</th>
+                                                                                                        <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>Hora</th>
+                                                                                                        <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>Duración</th>
+                                                                                                        <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>Aciertos</th>
+                                                                                                        <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>Errores</th>
+                                                                                                        <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>Choques</th>
+                                                                                                        <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>Precisión</th>
+                                                                                                        <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>Estado</th>
+                                                                                                    </>
+                                                                                                )}
+                                                                                                {selectedGame === 'paseo' && (
                                                                                                     <>
                                                                                                         <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>ID</th>
                                                                                                         <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>Hora</th>
@@ -540,7 +650,8 @@ const UsersTab = () => {
                                                                                                         <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>Precisión</th>
                                                                                                         <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>Resultado</th>
                                                                                                     </>
-                                                                                                ) : (
+                                                                                                )}
+                                                                                                {selectedGame === 'abecedario' && (
                                                                                                     <>
                                                                                                         <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>Palabra</th>
                                                                                                         <th style={{ textAlign: 'left', padding: '10px', color: '#888' }}>Hora</th>
@@ -553,165 +664,106 @@ const UsersTab = () => {
                                                                                             </tr>
                                                                                         </thead>
                                                                                         <tbody>
-                                                                                            {isPaseo ? (
-                                                                                                nivel.partidas.map((partida: any, idx: number) => (
-                                                                                                    <tr key={idx} style={{ borderBottom: '1px solid #1a1d2e' }}>
-                                                                                                        <td style={{ padding: '10px' }}>
-                                                                                                            <strong>#{partida.id}</strong>
-                                                                                                        </td>
-                                                                                                        <td style={{ padding: '10px', color: '#888' }}>
-                                                                                                            {partida.hora}
-                                                                                                        </td>
-                                                                                                        <td style={{ padding: '10px' }}>
-                                                                                                            {partida.duracion?.toFixed(1) || '-'}s
-                                                                                                        </td>
-                                                                                                        <td style={{ padding: '10px', color: '#51cf66' }}>
-                                                                                                            {partida.aciertos}
-                                                                                                        </td>
-                                                                                                        <td style={{ 
-                                                                                                            padding: '10px',
-                                                                                                            color: partida.errores > 5 ? '#ff6b6b' : 'inherit'
-                                                                                                        }}>
-                                                                                                            {partida.errores}
-                                                                                                        </td>
-                                                                                                        <td style={{ padding: '10px' }}>
-                                                                                                            {partida.precision?.toFixed(1) || '-'}%
-                                                                                                        </td>
-                                                                                                        <td style={{ padding: '10px' }}>
-                                                                                                            <span style={{ 
-                                                                                                                color: partida.resultado === 'victoria' ? '#51cf66' : '#ff6b6b',
-                                                                                                                fontWeight: 'bold'
-                                                                                                            }}>
-                                                                                                                {partida.resultado === 'victoria' ? '✓ Victoria' : `✗ ${partida.razon_derrota || 'Derrota'}`}
-                                                                                                            </span>
-                                                                                                        </td>
-                                                                                                    </tr>
-                                                                                                ))
-                                                                                            ) : (
-                                                                                                nivel.palabras.map((palabra: any, idx: number) => (
-                                                                                                    <tr key={idx} style={{ borderBottom: '1px solid #1a1d2e' }}>
-                                                                                                        <td style={{ padding: '10px' }}>
-                                                                                                            <strong>{palabra.palabra}</strong>
-                                                                                                        </td>
-                                                                                                        <td style={{ padding: '10px', color: '#888' }}>
-                                                                                                            {palabra.hora}
-                                                                                                        </td>
-                                                                                                        <td style={{ padding: '10px' }}>
-                                                                                                            {palabra.tiempo.toFixed(1)}s
-                                                                                                        </td>
-                                                                                                        <td style={{ 
-                                                                                                            padding: '10px',
-                                                                                                            color: palabra.errores > 2 ? '#ff6b6b' : 'inherit'
-                                                                                                        }}>
-                                                                                                            {palabra.errores}
-                                                                                                        </td>
-                                                                                                        <td style={{ padding: '10px' }}>
-                                                                                                            {palabra.pistas}
-                                                                                                        </td>
-                                                                                                        <td style={{ padding: '10px' }}>
-                                                                                                            <span style={{ 
-                                                                                                                color: palabra.completado ? '#51cf66' : '#aaa'
-                                                                                                            }}>
-                                                                                                                {palabra.completado ? '✓ Completado' : '✗ Incompleto'}
-                                                                                                            </span>
-                                                                                                        </td>
-                                                                                                    </tr>
-                                                                                                ))
-                                                                                            )}
+                                                                                            {items.map((item: any, idx: number) => (
+                                                                                                <tr key={idx} style={{ borderBottom: '1px solid #1a1d2e' }}>
+                                                                                                    {selectedGame === 'memoria' && (
+                                                                                                        <>
+                                                                                                            <td style={{ padding: '10px' }}><strong>#{item.session_id}</strong></td>
+                                                                                                            <td style={{ padding: '10px', color: '#888' }}>{item.hora}</td>
+                                                                                                            <td style={{ padding: '10px' }}>{item.grid_size}</td>
+                                                                                                            <td style={{ padding: '10px', color: '#51cf66' }}>{item.accuracy?.toFixed(1)}%</td>
+                                                                                                            <td style={{ padding: '10px' }}>{item.duracion?.toFixed(1)}s</td>
+                                                                                                            <td style={{ padding: '10px' }}>
+                                                                                                                <span style={{ color: item.estado === 'completed' ? '#51cf66' : '#ff6b6b' }}>
+                                                                                                                    {item.estado === 'completed' ? '✓' : '✗'} {item.estado}
+                                                                                                                </span>
+                                                                                                            </td>
+                                                                                                            <td style={{ padding: '10px' }}><strong>{item.ai_score || '-'}</strong>/10</td>
+                                                                                                            <td style={{ padding: '10px' }}>{formatDecision(item.ai_decision)}</td>
+                                                                                                            <td style={{ padding: '10px' }}>
+                                                                                                                <div style={{ display: 'flex', gap: '3px' }}>
+                                                                                                                    {formatMetricBadge(item.ai_memory)}
+                                                                                                                    {formatMetricBadge(item.ai_speed)}
+                                                                                                                </div>
+                                                                                                            </td>
+                                                                                                        </>
+                                                                                                    )}
+                                                                                                    {selectedGame === 'trenes' && (
+                                                                                                        <>
+                                                                                                            <td style={{ padding: '10px' }}><strong>#{item.session_id}</strong></td>
+                                                                                                            <td style={{ padding: '10px', color: '#888' }}>{item.hora}</td>
+                                                                                                            <td style={{ padding: '10px' }}>{item.duracion?.toFixed(1)}s</td>
+                                                                                                            <td style={{ padding: '10px', color: '#51cf66' }}>{item.aciertos}</td>
+                                                                                                            <td style={{ padding: '10px', color: item.errores > 0 ? '#ff6b6b' : 'inherit' }}>{item.errores}</td>
+                                                                                                            <td style={{ padding: '10px', color: item.choques > 0 ? '#ff6b6b' : 'inherit', fontWeight: item.choques > 0 ? 'bold' : 'normal' }}>{item.choques || 0}</td>
+                                                                                                            <td style={{ padding: '10px' }}>{item.precision?.toFixed(1)}%</td>
+                                                                                                            <td style={{ padding: '10px' }}>
+                                                                                                                <span style={{ color: item.estado === 'completed' ? '#51cf66' : '#ff6b6b' }}>
+                                                                                                                    {item.estado === 'completed' ? '✓' : '✗'} {item.estado}
+                                                                                                                </span>
+                                                                                                            </td>
+                                                                                                        </>
+                                                                                                    )}
+                                                                                                    {selectedGame === 'paseo' && (
+                                                                                                        <>
+                                                                                                            <td style={{ padding: '10px' }}><strong>#{item.id}</strong></td>
+                                                                                                            <td style={{ padding: '10px', color: '#888' }}>{item.hora}</td>
+                                                                                                            <td style={{ padding: '10px' }}>{item.duracion?.toFixed(1) || '-'}s</td>
+                                                                                                            <td style={{ padding: '10px', color: '#51cf66' }}>{item.aciertos}</td>
+                                                                                                            <td style={{ padding: '10px', color: item.errores > 5 ? '#ff6b6b' : 'inherit' }}>{item.errores}</td>
+                                                                                                            <td style={{ padding: '10px' }}>{item.precision?.toFixed(1) || '-'}%</td>
+                                                                                                            <td style={{ padding: '10px' }}>
+                                                                                                                <span style={{ color: item.resultado === 'victoria' ? '#51cf66' : '#ff6b6b', fontWeight: 'bold' }}>
+                                                                                                                    {item.resultado === 'victoria' ? '✓ Victoria' : `✗ ${item.razon_derrota || 'Derrota'}`}
+                                                                                                                </span>
+                                                                                                            </td>
+                                                                                                        </>
+                                                                                                    )}
+                                                                                                    {selectedGame === 'abecedario' && (
+                                                                                                        <>
+                                                                                                            <td style={{ padding: '10px' }}><strong>{item.palabra}</strong></td>
+                                                                                                            <td style={{ padding: '10px', color: '#888' }}>{item.hora}</td>
+                                                                                                            <td style={{ padding: '10px' }}>{item.tiempo?.toFixed(1)}s</td>
+                                                                                                            <td style={{ padding: '10px', color: item.errores > 2 ? '#ff6b6b' : 'inherit' }}>{item.errores}</td>
+                                                                                                            <td style={{ padding: '10px' }}>{item.pistas}</td>
+                                                                                                            <td style={{ padding: '10px' }}>
+                                                                                                                <span style={{ color: item.completado ? '#51cf66' : '#aaa' }}>
+                                                                                                                    {item.completado ? '✓ Completado' : '✗ Incompleto'}
+                                                                                                                </span>
+                                                                                                            </td>
+                                                                                                        </>
+                                                                                                    )}
+                                                                                                </tr>
+                                                                                            ))}
                                                                                         </tbody>
                                                                                     </table>
                                                                                 </div>
-                                                                            )}
+                                                                            )
+                                                                            }
                                                                         </div>
                                                                     );
                                                                 })}
                                                             </div>
-                                                        )}
+                                                        )
+                                                        }
                                                     </div>
                                                 );
                                             })}
                                         </div>
                                     ) : (
-                                        // Vista de tabla para otros juegos
-                                        <div className="table-container">
-                                            <table>
-                                                <thead>
-                                                    {selectedGame === 'memoria' && (
-                                                        <tr>
-                                                            <th>ID</th>
-                                                            <th>Dificultad</th>
-                                                            <th>Grid</th>
-                                                            <th>Accuracy</th>
-                                                            <th>Tiempo</th>
-                                                            <th>Estado</th>
-                                                            <th>Score IA</th>
-                                                            <th>Decisión</th>
-                                                            <th>Métricas</th>
-                                                        </tr>
-                                                    )}
-                                                {selectedGame === 'trenes' && (
-                                                    <tr>
-                                                        <th>ID</th>
-                                                        <th>Velocidad</th>
-                                                        <th>Colores</th>
-                                                        <th>Aciertos</th>
-                                                        <th>Choques</th>
-                                                        <th>Estado</th>
-                                                    </tr>
-                                                )}
-                                                </thead>
-                                                <tbody>
-                                                    {gameSessions.map((session: any) => (
-                                                        <tr key={session.id || session.session_id}>
-                                                            {selectedGame === 'memoria' && (
-                                                                <>
-                                                                    <td>{session.session_id}</td>
-                                                                    <td><span className="badge">{session.difficulty_level}</span></td>
-                                                                    <td>{session.grid_size}</td>
-                                                                    <td>{session.accuracy?.toFixed(1)}%</td>
-                                                                    <td>{session.elapsed_time?.toFixed(1)}s</td>
-                                                                    <td>{session.completion_status}</td>
-                                                                    <td><strong>{session.ai_metrics?.overall_score || '-'}</strong>/10</td>
-                                                                    <td>{formatDecision(session.ai_metrics?.adjustment_decision)}</td>
-                                                                    <td>
-                                                                        <div style={{ display: 'flex', gap: '5px', fontSize: '0.8em' }}>
-                                                                            {formatMetricBadge(session.ai_metrics?.memory)}
-                                                                            {formatMetricBadge(session.ai_metrics?.speed)}
-                                                                        </div>
-                                                                    </td>
-                                                                </>
-                                                            )}
-                                                            {selectedGame === 'trenes' && (
-                                                                <>
-                                                                    <td>{session.id}</td>
-                                                                    <td>{session.train_speed?.toFixed(1)}</td>
-                                                                    <td>{session.color_count}</td>
-                                                                    <td>{session.correct_routing}</td>
-                                                                    <td style={{ color: (session.crash_count || 0) > 0 ? '#ff6b6b' : 'inherit', fontWeight: (session.crash_count || 0) > 0 ? 'bold' : 'normal' }}>
-                                                                        {session.crash_count || 0}
-                                                                    </td>
-                                                                    <td><span className="badge">{session.completion_status}</span></td>
-                                                                </>
-                                                            )}
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
+                                        <div style={{ textAlign: 'center', color: '#666', padding: '20px' }}>
+                                            No hay sesiones registradas para este juego.
                                         </div>
-                                    )
-                                ) : (
-                                    <div style={{ textAlign: 'center', color: '#666', padding: '20px' }}>
-                                        No hay sesiones registradas para este juego.
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
+                                    )}
+                                </div>
+                            )
+                        }
+                    </div >
                 ) : (
                     <div>No hay datos disponibles.</div>
                 )}
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };
 

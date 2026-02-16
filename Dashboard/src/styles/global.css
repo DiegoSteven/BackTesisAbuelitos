@@ -13,6 +13,15 @@
     --gradient-3: linear-gradient(135deg, #ff512f 0%, #dd2476 100%);
 }
 
+/* Tema Claro */
+.theme-light {
+    --bg-dark: #f8fafc;
+    --bg-card: #ffffff;
+    --bg-sidebar: #f1f5f9;
+    --text-primary: #1e293b;
+    --text-secondary: #64748b;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -25,6 +34,9 @@ body {
         sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "kern" 1;
+    font-size: 12px;
     background-color: var(--bg-dark);
     color: var(--text-primary);
     min-height: 100vh;
@@ -37,6 +49,9 @@ body {
 .app {
     display: flex;
     min-height: 100vh;
+    background-color: var(--bg-dark);
+    color: var(--text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Sidebar Styles */

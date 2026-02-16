@@ -1,9 +1,10 @@
 interface SidebarProps {
     activeTab: string;
     onTabChange: (tab: string) => void;
+    isDarkTheme?: boolean;
 }
 
-const Sidebar = ({ activeTab, onTabChange }: SidebarProps) => {
+const Sidebar = ({ activeTab, onTabChange, isDarkTheme = true }: SidebarProps) => {
     const navItems = [
         { id: 'general', icon: '📊', label: 'General' },
         { id: 'memory', icon: '🧠', label: 'Memory Game' },
@@ -11,6 +12,7 @@ const Sidebar = ({ activeTab, onTabChange }: SidebarProps) => {
         { id: 'paseo', icon: '🚶', label: 'Paseo' },
         { id: 'train', icon: '🚂', label: 'Trenes' },
         { id: 'users', icon: '👥', label: 'Usuarios' },
+        { id: 'progression', icon: '📈', label: 'Progresión' },
     ];
 
     return (

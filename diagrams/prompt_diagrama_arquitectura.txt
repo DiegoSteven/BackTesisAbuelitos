@@ -1,0 +1,78 @@
+Create a professional, flat-design 2D software architecture diagram on a white background. The layout is divided into a left sidebar and a main stack of **FIVE** horizontal layers.
+
+**1. Left Sidebar (Vertical):**
+- **Color:** Light orange background.
+- **Top Text:** "VERSION CONTROL" (bold).
+- **Center Content:** **GitHub Logo** and text "GitHub (Control Versiones)".
+- **Connectors:** **Dashed orange arrows** pointing from this sidebar ONLY to:
+    1. The entire **Presentation Layer**.
+    2. The entire **API Layer**.
+    3. The entire **Business Logic Layer**.
+
+**2. Main Area (Right side, 5 Stacked Layers):**
+*IMPORTANT: All internal component boxes must have a PURE WHITE background with thin borders.*
+
+*   **Layer 1 (Top, Light Blue): "PRESENTATION LAYER (CLIENT)"**
+    *   **Technologies:** **Unity 3D Logo**, **C# Logo**.
+    *   **Content:** **White Box** "Login" -> Blue arrow -> **White Box** "Menú Principal" -> Blue arrow -> **White Box** "Juego Elegido".
+
+*   **Layer 2 (Second, Light Green): "API LAYER (CONTROLLERS)"**
+    *   **Technologies:** **Flask Logo** (3.1.1).
+    *   **Content:** 3 **White Boxes** representing endpoints:
+        *   "Auth Controller" (Login/Register)
+        *   "Game Controller" (Submit Results/Get Config)
+        *   "Admin Controller" (Dashboard Data)
+
+*   **Layer 3 (Third, Darker Green): "BUSINESS LOGIC LAYER (SERVICES)"**
+    *   **Technologies:** **Python Logo** (3.12).
+    *   **Content:** 4 **White Boxes**: "Gestor de Sesión", "Registro de Métricas", "Gestor de Dificultad", "Servicio de IA".
+
+*   **Layer 4 (Fourth, Light Purple): "EXTERNAL SERVICES"**
+    *   **Technologies:** **Google Gemini Logo** (AI Model).
+    *   **Layout:**
+        *   Right: **White Box** "Interfaz API".
+        *   Left: **White Box** "Modelo Generativo (Gemini)".
+    *   **Flow:** "Interfaz API" <-> "Modelo Generativo".
+
+*   **Layer 5 (Bottom, Light Yellow): "DATA LAYER"**
+    *   **Visual Structure:**
+        1.  **Docker Container Box:** Boundary labeled **"Docker Container"** with **Docker Logo**.
+        2.  **Inside Docker:** **PostgreSQL DB** Icon.
+
+**3. Specific Flows & Arrows (Exact Colors & Numbering):**
+*CRITICAL: Number badges (1-13) on arrow lines only.*
+
+- **Green Arrow** (Badge: **1**) "Iniciar sesión": "Login" (L1) -> "Auth Controller" (L2).
+- **Green Arrow** "Delegar": "Auth Controller" (L2) -> "Gestor de Sesión" (L3).
+- **Green Arrow (Double)** (Badge: **2**) "Validar DB": "Gestor de Sesión" (L3) <-> "PostgreSQL DB" (L5).
+- **Green Arrow** (Badge: **3**) "Retornar Info": "Gestor de Sesión" (L3) -> "Auth Controller" (L2) -> "Menú Principal" (L1).
+
+- **Pink Arrow** (Badge: **4**) "Solicitar Config": "Juego Elegido" (L1) -> "Game Controller" (L2).
+- **Pink Arrow** "Procesar Config": "Game Controller" (L2) -> "Gestor de Dificultad" (L3).
+- **Pink Arrow** (Badge: **5**) "Recibir Config": "Gestor de Dificultad" (L3) -> "Game Controller" (L2) -> "Juego Elegido" (L1).
+
+- **Orange Arrow** (Badge: **6**) "Enviar Resultados": "Juego Elegido" (L1) -> "Game Controller" (L2).
+- **Orange Arrow** "Procesar Métricas": "Game Controller" (L2) -> "Registro de Métricas" (L3).
+- **Orange Arrow** (Badge: **7**) "Guardar": "Registro de Métricas" (L3) -> "PostgreSQL DB" (L5).
+
+- **Purple Arrow** (Badge: **8**) "Notificar": "Registro de Métricas" (L3) -> "Gestor de Dificultad" (L3).
+- **Purple Arrow** (Badge: **9**) "Solicitar Análisis": "Gestor de Dificultad" (L3) -> "Servicio de IA" (L3).
+- **Purple Arrow** (Badge: **10**) "Consultar API": "Servicio de IA" (L3) -> "Interfaz API" (L4).
+- **Small Purple Arrows**: "Interfaz API" <-> "Modelo Generativo" (L4).
+- **Purple Arrow** (Badge: **11**) "Respuesta IA": "Interfaz API" (L4) -> "Servicio de IA" (L3).
+- **Purple Arrow** (Badge: **12**) "Entregar Resultado": "Servicio de IA" (L3) -> "Gestor de Dificultad" (L3).
+- **Pink Arrow** (Badge: **13**) "Aplicar Config": "Gestor de Dificultad" (L3) (Internal).
+
+**4. Legend (Bottom Right):**
+1. Blue: "Selección usuario"
+2. Green: "Control de sesión"
+3. Orange: "Registro de datos"
+4. Purple: "Procesamiento IA"
+5. Pink: "Configuración"
+6. Dashed Orange: "Versionamiento"
+
+**Style:**
+- Clean, technical vector aesthetic.
+- Pastel colors.
+- **PURE WHITE BACKGROUND** for internal boxes.
+- Authentic logos.

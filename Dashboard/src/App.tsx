@@ -8,6 +8,7 @@ import AbecedarioTab from './pages/AbecedarioTab';
 import PaseoTab from './pages/PaseoTab';
 import TrainTab from './pages/TrainTab';
 import UsersTab from './pages/UsersTab';
+import ProgressionTab from './pages/ProgressionTab';
 import './styles/global.css';
 
 const queryClient = new QueryClient({
@@ -21,6 +22,7 @@ const queryClient = new QueryClient({
 
 function App() {
   const [activeTab, setActiveTab] = useState('memory');
+  const [isDarkTheme, setIsDarkTheme] = useState(true);
 
   const renderTab = () => {
     switch (activeTab) {
@@ -36,6 +38,8 @@ function App() {
         return <TrainTab />;
       case 'users':
         return <UsersTab />;
+      case 'progression':
+        return <ProgressionTab />;
       default:
         return <GeneralTab />;
     }
@@ -49,6 +53,7 @@ function App() {
       paseo: 'Paseo',
       train: 'Trenes',
       users: 'Gestión de Usuarios',
+      progression: 'Reporte de Progresión',
     };
     return titles[tab] || 'Dashboard';
   };
@@ -57,12 +62,21 @@ function App() {
     queryClient.invalidateQueries();
   };
 
+  const toggleTheme = () => {
+    setIsDarkTheme(!isDarkTheme);
+  };
+
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="app">
-        <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
+      <div className={`app ${isDarkTheme ? 'theme-dark' : 'theme-light'}`}>
+        <Sidebar activeTab={activeTab} onTabChange={setActiveTab} isDarkTheme={isDarkTheme} />
         <div className="main-content">
-          <Header title={getTitleForTab(activeTab)} onRefresh={handleRefresh} />
+          <Header
+            title={getTitleForTab(activeTab)}
+            onRefresh={handleRefresh}
+            isDarkTheme={isDarkTheme}
+            onToggleTheme={toggleTheme}
+          />
           {renderTab()}
         </div>
       </div>

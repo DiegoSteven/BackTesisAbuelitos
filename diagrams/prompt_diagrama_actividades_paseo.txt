@@ -1,0 +1,48 @@
+Create a professional UML Activity Diagram for the "Paseo (Visuospatial) Game" logic flow. The design should be clean, using a white background and standard UML 2.0 notation.
+
+**1. Swimlanes (Partitions):**
+Divide the diagram into 3 vertical swimlanes:
+*   **Left:** `User (Adulto Mayor)`
+*   **Center:** `Frontend (Unity)`
+*   **Right:** `Backend (System & AI)`
+
+**2. Activity Flow:**
+
+*   **Start Node** (Black circle) in `User` lane.
+*   **Activity:** "Select Paseo Game" (`User`).
+*   **Activity:** "Request Session Config" (`Frontend`).
+*   **Activity:** "Analyze Last Session" (`Backend`).
+    *   *Decision Diamond:* "Condition?"
+        *   *Win:* -> **Activity:** "Increase Level (Deterministic)".
+        *   *Loss (Easy/Med):* -> **Activity:** "Decrease/Maintain Level".
+        *   *Loss (Hard):* -> **Activity:** "Consult Gemini AI".
+            *   *Action:* "Adjust Speed/Level based on Frustration".
+*   **Activity:** "Generate Config (Colors, Speed)" (`Backend`).
+*   **Activity:** "Start Game Loop" (`Frontend`).
+    *   *Parallel Fork:*
+        *   **Flow A:** "Spawn & Move Spheres" (`Frontend`).
+        *   **Flow B:** "Wait for Tap" (`User`).
+*   **Activity:** "Tap Sphere" (`User`).
+*   **Activity:** "Validate Hit" (`Frontend`).
+    *   *Decision Diamond:* "Target Color?"
+        *   *Yes:* -> **Activity:** "Score Point (Visual Feedback)".
+        *   *No (Distractor):* -> **Activity:** "Record Error (Vibration)".
+*   **Activity:** "Check End Condition (Time/Meta)" (`Frontend`).
+*   **Activity:** "Submit Metrics" (`Frontend`).
+*   **Activity:** "Save Session Data" (`Backend`).
+*   **Activity:** "Show Results" (`Frontend`).
+*   **End Node** (Black circle with border).
+
+**3. Styling & Notation:**
+*   **Nodes:** Rounded rectangles for activities.
+*   **Decisions:** Diamonds for branching logic.
+*   **Fork/Join:** Thick horizontal bars for parallel processes (Sphere movement vs User Input).
+*   **Connectors:** Solid arrows showing the flow direction.
+*   **Colors:**
+    *   User Activities: Light Blue.
+    *   Frontend Activities: Light Orange.
+    *   Backend Activities: Light Green.
+    *   Decision Diamonds: Yellow.
+
+**4. Legend:**
+*   Include a small legend identifying the Swimlanes and Activity types.

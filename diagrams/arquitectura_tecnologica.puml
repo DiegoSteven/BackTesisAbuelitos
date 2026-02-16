@@ -1,0 +1,133 @@
+@startuml Arquitectura_Tecnologica
+title Arquitectura del Sistema con Tecnologías - Plataforma de Juegos Cognitivos
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam linetype polyline
+skinparam defaultTextAlignment center
+
+' Estilos optimizados
+skinparam package {
+    BackgroundColor<<presentation>> #E3F2FD
+    BackgroundColor<<logic>> #E8F5E9
+    BackgroundColor<<backend>> #FFF3E0
+    BackgroundColor<<services>> #F3E5F5
+    BackgroundColor<<data>> #FFF9C4
+    BackgroundColor<<control>> #E0E0E0
+    BorderColor #424242
+    BorderThickness 2
+    FontSize 11
+    FontStyle bold
+    Padding 15
+}
+
+skinparam component {
+    BackgroundColor #FFFFFF
+    BorderColor #616161
+    FontSize 10
+}
+
+skinparam arrow {
+    Color #424242
+    Thickness 2
+}
+
+' ============================================
+' CAPA 1: PRESENTACIÓN
+' ============================================
+package "CAPA DE PRESENTACIÓN (Unity 2022 LTS)" <<presentation>> {
+    component "Menú Principal\n(UI Toolkit)" as menu
+    component "Juego Elegido\n(GameObjects & Scripts)" as game
+}
+
+' ============================================
+' CAPA 2: LÓGICA CLIENTE
+' ============================================
+package "CAPA DE LÓGICA CLIENTE (C# - Unity Scripts)" <<logic>> {
+    component "Gestor de Sesión\n(SessionManager)" as session
+    component "Registro de Métricas\n(MetricsLogger)" as metrics
+    component "Gestor de Dificultad\n(DifficultyManager)" as difficulty
+    component "Integración API\n(UnityWebRequest)" as api
+}
+
+' ============================================
+' CAPA 3: BACKEND
+' ============================================
+package "CAPA DE BACKEND (Python 3.12 - Flask 3.1.1)" <<backend>> {
+    component "API REST\n(Flask Routes)" as backend_api
+    component "Servicios de Negocio\n(GameService, AIService)" as backend_services
+    component "ORM\n(SQLAlchemy)" as orm
+}
+
+' ============================================
+' CAPA 4: SERVICIOS EXTERNOS
+' ============================================
+package "SERVICIOS EXTERNOS" <<services>> {
+    component "Google Gemini AI\n(Generative Model)" as aiAPI #F8BBD0
+}
+
+' ============================================
+' CAPA 5: DATOS
+' ============================================
+package "CAPA DE DATOS" <<data>> {
+    database "PostgreSQL\n(Base de Datos)" as db
+    storage "Almacenamiento Local\n(PlayerPrefs/JSON)" as storage
+}
+
+' ============================================
+' CONTROL DE VERSIONES
+' ============================================
+rectangle "GitHub\n(Control de Versiones)" as github #FFE0B2
+
+' ============================================
+' RELACIONES
+' ============================================
+
+' Usuario selecciona juego
+menu -[#2196F3]down-> game : Seleccionar
+
+' Juego -> Gestor de Sesión
+game -[#4CAF50]down-> session : 1. Iniciar sesión
+
+' Flujo de métricas
+session -[#FF9800]right-> metrics : 2. Capturar datos
+metrics -[#FF9800]down-> storage : 3. Guardar Local
+
+' Flujo hacia Backend
+metrics -[#9C27B0]down-> api : 4. Preparar métricas
+api -[#9C27B0]down-> backend_api : 5. Enviar (POST)
+
+' Flujo Backend Interno
+backend_api -[#9C27B0]down-> backend_services : Procesar
+backend_services -[#9C27B0]right-> orm : Guardar Sesión
+orm -[#9C27B0]down-> db : Persistir
+
+' Flujo IA
+backend_services -[#9C27B0]down-> aiAPI : 6. Analizar (Prompt)
+aiAPI -[#9C27B0]up-> backend_services : Recomendación
+
+' Respuesta a Cliente
+backend_services -[#E91E63]up-> backend_api : Configuración
+backend_api -[#E91E63]up-> api : JSON Respuesta
+api -[#E91E63]left-> difficulty : 7. Recibir parámetros
+
+' Aplicar configuración
+difficulty -[#E91E63]up-> game : 8. Configurar próxima sesión
+
+' Control de versiones
+github .[#FF6F00].> menu
+github .[#FF6F00].> backend_api
+
+' ============================================
+' LEYENDA
+' ============================================
+legend right
+    |<#2196F3>    | Selección usuario |
+    |<#4CAF50>    | Control de sesión |
+    |<#FF9800>    | Registro de datos |
+    |<#9C27B0>    | Procesamiento Backend/IA |
+    |<#E91E63>    | Configuración Adaptativa |
+    |<#FF6F00>    | Versionamiento |
+endlegend
+
+@enduml

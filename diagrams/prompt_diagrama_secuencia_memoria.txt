@@ -1,0 +1,57 @@
+Create a professional UML Sequence Diagram for the "Memory Game" flow. The design should be clean, using a white background and standard UML 2.0 notation.
+
+**1. Participants (Lifelines):**
+*   **Actor:** `User (Adulto Mayor)`
+*   **Boundary:** `Unity UI (Frontend)`
+*   **Control:** `MemoryGameController (API)`
+*   **Entity:** `MemoryGameService (Logic)`
+*   **Entity:** `AIAdapterService (AI Wrapper)`
+*   **Database:** `PostgreSQL (DB)`
+*   **External:** `Gemini AI (Google API)`
+
+**2. Sequence Flow:**
+
+**Phase 1: Initialization (Getting Config)**
+1.  `User` -> `Unity UI`: Opens Memory Game.
+2.  `Unity UI` -> `MemoryGameController`: `GET /config/{user_id}`.
+3.  `MemoryGameController` -> `MemoryGameService`: `get_user_config()`.
+4.  `MemoryGameService` -> `PostgreSQL`: Query `MemoryGameConfig`.
+5.  `PostgreSQL` --> `MemoryGameService`: Return Config (e.g., Grid 2x3, Time 60s).
+6.  `MemoryGameService` --> `MemoryGameController`: Return Config Data.
+7.  `MemoryGameController` --> `Unity UI`: JSON Config.
+8.  `Unity UI` -> `User`: Display Game Board (Cards face up -> face down).
+
+**Phase 2: Gameplay (Internal Loop)**
+*   *Note: This happens in Unity, represent with a self-loop or note.*
+*   `User` interacts with cards (Flip, Match, Fail).
+*   `Unity UI` tracks metrics (Time, Flips, Accuracy).
+
+**Phase 3: Submission & AI Analysis**
+9.  `User` -> `Unity UI`: Finishes Game (Win/Loss).
+10. `Unity UI` -> `MemoryGameController`: `POST /submit-results` (Payload: metrics).
+11. `MemoryGameController` -> `MemoryGameService`: `save_session_and_analyze()`.
+12. `MemoryGameService` -> `PostgreSQL`: Save `MemoryGameSession` (Insert).
+13. `MemoryGameService` -> `AIAdapterService`: `analyze_and_recommend()`.
+14. `AIAdapterService` -> `Gemini AI`: Send Prompt (Metrics + History).
+15. `Gemini AI` --> `AIAdapterService`: Return JSON Analysis (Decision: Increase/Maintain).
+16. `AIAdapterService` --> `MemoryGameService`: Return New Config.
+17. `MemoryGameService` -> `PostgreSQL`: Update `MemoryGameConfig` (Update).
+18. `MemoryGameService` --> `MemoryGameController`: Return Result + New Config.
+19. `MemoryGameController` --> `Unity UI`: JSON Response.
+20. `Unity UI` -> `User`: Show Results Screen & Next Level Button.
+
+**3. Styling & Notation:**
+*   **Lifelines:** Vertical dashed lines descending from each participant box.
+*   **Activation Bars:** Thin rectangles on lifelines to show when an object is active.
+*   **Messages:**
+    *   Solid arrow with filled head for synchronous calls.
+    *   Dashed arrow with open head for return messages.
+*   **Fragments:** Use an `alt` fragment for the "AI Analysis" step to show success/failure handling (optional, but good for detail).
+*   **Colors:**
+    *   User/Unity: Light Blue.
+    *   Backend (Controller/Service): Light Green.
+    *   Database: Light Yellow.
+    *   External AI: Light Purple.
+
+**4. Legend:**
+*   Include a small legend for the arrow types (Sync Call, Return).

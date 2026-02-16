@@ -47,6 +47,7 @@ def swagger_spec():
 
 # User Routes
 app.add_url_rule('/users', 'get_users', UserController.get_all, methods=['GET'])
+app.add_url_rule('/users', 'create_user', UserController.register, methods=['POST'])
 app.add_url_rule('/register', 'register', UserController.register, methods=['POST'])
 app.add_url_rule('/login', 'login', UserController.login, methods=['POST'])
 
@@ -78,13 +79,10 @@ app.add_url_rule('/admin/user-paseo-sessions/<int:user_id>', 'admin_user_paseo_s
 app.add_url_rule('/admin/train-sessions', 'admin_train_sessions', AdminController.get_train_sessions, methods=['GET'])
 app.add_url_rule('/admin/user-train-sessions/<int:user_id>', 'admin_user_train_sessions', AdminController.get_user_train_sessions, methods=['GET'])
 app.add_url_rule('/admin/train-configs', 'admin_train_configs', AdminController.get_train_configs, methods=['GET'])
-
-# Ruta para servir el dashboard
-@app.route('/admin')
-def admin_dashboard():
-    import os
-    directory = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
-    return send_from_directory(directory, 'admin_dashboard.html')
+app.add_url_rule('/admin/progression-stats/<int:user_id>', 'admin_progression_stats', AdminController.get_progression_stats, methods=['GET'])
+app.add_url_rule('/admin/general-progression-stats', 'admin_general_progression_stats', AdminController.get_general_progression_stats, methods=['GET'])
+app.add_url_rule('/admin/indicators', 'admin_indicators_general', AdminController.get_indicators, methods=['GET'])
+app.add_url_rule('/admin/indicators/<int:user_id>', 'admin_indicators_user', AdminController.get_indicators, methods=['GET'])
 
 if __name__ == '__main__':
     with app.app_context():

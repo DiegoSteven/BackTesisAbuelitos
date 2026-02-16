@@ -28,6 +28,7 @@ export const getTrainConfigs = () => api.get('/admin/train-configs');
 
 // Users
 export const getUsers = () => api.get('/users');
+export const createUser = (data: any) => api.post('/users', data);
 export const getUserMemorySessions = (userId: number) =>
     api.get(`/admin/user-memory-sessions/${userId}`);
 export const getUserAbecedarioSessions = (userId: number) =>
@@ -36,5 +37,13 @@ export const getUserPaseoSessions = (userId: number) =>
     api.get(`/admin/user-paseo-sessions/${userId}`);
 export const getUserTrainSessions = (userId: number) =>
     api.get(`/admin/user-train-sessions/${userId}`);
+export const getProgressionStats = (userId: number) =>
+    api.get(`/admin/progression-stats/${userId}`).then(res => res.data);
+export const getGeneralProgressionStats = () =>
+    api.get('/admin/general-progression-stats').then(res => res.data);
+export const getIndicators = (userId?: number | string) =>
+    userId && userId !== 'general'
+        ? api.get(`/admin/indicators/${userId}`).then(res => res.data)
+        : api.get('/admin/indicators').then(res => res.data);
 
 export default api;
