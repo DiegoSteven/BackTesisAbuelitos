@@ -67,9 +67,9 @@ class TrainAIAdapter:
         api_key = os.getenv('GEMINI_API_KEY')
         if api_key:
             genai.configure(api_key=api_key)
-            self.model = genai.GenerativeModel('gemini-1.5-flash')
+            self.model = genai.GenerativeModel('gemini-2.5-flash')
             self.use_ai = True
-            print("[TRAIN IA] Gemini 1.5 Flash configurado")
+            print("[TRAIN IA] Gemini 2.5 Flash configurado")
         else:
             print("[TRAIN IA] Sin API key. Usando lógica clásica.")
             self.use_ai = False
