@@ -9,6 +9,8 @@ services:
       POSTGRES_DB: abuelitosBack
     ports:
       - 5433:5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
   
   backend:
     build: .
@@ -42,3 +44,6 @@ services:
       - 5050:80
     depends_on:
       - db
+
+volumes:
+  postgres_data:
